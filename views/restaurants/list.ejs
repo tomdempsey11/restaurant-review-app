@@ -1,0 +1,54 @@
+<%- include('../partials/header', { title, user }) %>
+
+<h2>Browse Restaurants</h2>
+
+<form id="filters" class="search" onsubmit="event.preventDefault(); loadRestaurants();">
+  <input type="text" id="q" placeholder="Search name or cuisine"/>
+  <select id="cuisine">
+    <option value="">All cuisines</option>
+    <option>Italian</option><option>Japanese</option><option>Mexican</option>
+  </select>
+  <select id="price">
+    <option value="">All prices</option>
+    <option>$</option><option>$$</option><option>$$$</option><option>$$$$</option>
+  </select>
+  <button>Apply</button>
+</form>
+
+<div id="grid" class="cards" style="margin-top:16px"></div>
+<div id="pager" style="margin-top:12px"></div>
+
+<script>
+async function loadRestaurants(page = 1) {
+  const q = document.getElementById('q').value.trim();
+  const cuisine = document.getElementById('cuisine').value;
+  const price = document.getElementById('price').value;
+  const params = new URLSearchParams({ page });
+  if (q) params.append('q', q);
+  if (cuisine) params.append('cuisine', cuisine);
+  if (price) params.append('price', price);
+
+  const res = await fetch(`/api/restaurants?${params.toString()}`);
+  const data = await res.json();
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = data.items.map(r => `
+    <a class="card" href="/restaurants/${r.slug}">
+      <div><strong>${r.name}</strong></div>
+      <div>${r.cuisine} • ${r.priceRange}</div>
+      <div>★ ${r.avgRating || 0}</div>
+    </a>
+  `).join('');
+
+  const pager = document.getElementById('pager');
+  const pages = data.pages || 1;
+  pager.innerHTML = `
+    <button ${data.page<=1?'disabled':''} onclick="loadRestaurants(${data.page-1})">Prev</button>
+    <span style="margin:0 8px">Page ${data.page} of ${pages}</span>
+    <button ${data.page>=pages?'disabled':''} onclick="loadRestaurants(${data.page+1})">Next</button>
+  `;
+}
+loadRestaurants();
+</script>
+
+<%- include('../partials/footer') %>

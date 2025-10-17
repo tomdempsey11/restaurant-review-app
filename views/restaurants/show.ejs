@@ -1,0 +1,48 @@
+<%- include('../partials/header', { title, user }) %>
+
+<div id="details"></div>
+
+<script>
+(async function() {
+  const slug = "<%= slug %>";
+  try {
+    const res = await fetch(`/api/restaurants/${slug}`);
+    if (!res.ok) throw new Error("Restaurant not found");
+    const { restaurant, reviews } = await res.json();
+
+    const writeUrl = "<%= user ? `/restaurants/${slug}/reviews/new` : `/auth/login?next=/restaurants/${slug}/reviews/new` %>";
+
+    document.getElementById('details').innerHTML = `
+      <h2>${restaurant.name}</h2>
+      <p>${restaurant.cuisine} • ${restaurant.priceRange}</p>
+      <p><strong>Rating:</strong> ★ ${restaurant.avgRating || 0}</p>
+      <p><strong>Address:</strong> ${restaurant.address}</p>
+      <p><strong>Hours:</strong> ${restaurant.openHours || '-'}</p>
+
+      <div style="margin:12px 0">
+        <a class="card" href="${writeUrl}">Write a Review</a>
+      </div>
+
+      <h3>Reviews</h3>
+      <div>
+        ${
+          reviews.length
+            ? reviews.map(rv => `
+              <div class="card" style="margin-bottom:10px">
+                <div><strong>★ ${rv.rating}</strong> — ${rv.title}</div>
+                <div>${rv.body}</div>
+                <small>${new Date(rv.createdAt).toLocaleString()}</small>
+              </div>
+            `).join('')
+            : '<p>No reviews yet.</p>'
+        }
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById('details').innerHTML = `<p style="color:red">Error loading restaurant.</p>`;
+    console.error(err);
+  }
+})();
+</script>
+
+<%- include('../partials/footer') %>

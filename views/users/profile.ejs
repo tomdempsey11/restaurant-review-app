@@ -1,0 +1,182 @@
+<%- include('../partials/header', { title, user }) %>
+
+<h2>My Reviews</h2>
+
+<div class="card" style="margin-bottom:12px">
+  <p><strong>Name:</strong> <%= user?.name %></p>
+  <p><strong>Email:</strong> <%= user?.email %></p>
+</div>
+
+<div id="list">Loading your reviews…</div>
+
+<script>
+async function loadMyReviews() {
+  const res = await fetch("/api/users/me/reviews");
+  if (!res.ok) {
+    document.getElementById("list").innerHTML = "<p style='color:#b91c1c'>Could not load your reviews.</p>";
+    return;
+  }
+  const reviews = await res.json();
+
+  if (!reviews.length) {
+    document.getElementById("list").innerHTML = "<p>You haven't posted any reviews yet.</p>";
+    return;
+  }
+
+  // Use data-* attributes (no inline onclick) and encode text safely.
+  document.getElementById("list").innerHTML = reviews.map(rv => `
+    <div class="card" style="margin-bottom:10px" id="card-${rv._id}">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px">
+        <div><strong>★ ${rv.rating}</strong> — ${escapeHtml(rv.title)}</div>
+        <div>
+          <button class="btn-edit"
+                  data-id="${rv._id}"
+                  data-rating="${rv.rating}"
+                  data-title="${encodeURIComponent(rv.title || '')}"
+                  data-body="${encodeURIComponent(rv.body || '')}"
+                  style="margin-right:6px">Edit</button>
+          <button class="btn-delete"
+                  data-id="${rv._id}"
+                  style="background:#fee2e2;border:1px solid #fecaca">Delete</button>
+        </div>
+      </div>
+      <div style="margin:6px 0">${escapeHtml(rv.body)}</div>
+      <small>${new Date(rv.createdAt).toLocaleString()}</small>
+
+      <!-- Inline edit area (hidden until editing) -->
+      <div id="edit-${rv._id}" style="display:none; margin-top:10px; border-top:1px solid #eee; padding-top:10px">
+        <label>Rating (1–5)</label>
+        <input type="number" id="edit-rating-${rv._id}" min="1" max="5" />
+
+        <label>Title</label>
+        <input type="text" id="edit-title-${rv._id}" />
+
+        <label>Review</label>
+        <textarea id="edit-body-${rv._id}" rows="3"></textarea>
+
+        <div style="margin-top:8px">
+          <button class="btn-save" data-id="${rv._id}">Save</button>
+          <button class="btn-cancel link-like" data-id="${rv._id}" style="margin-left:6px">Cancel</button>
+        </div>
+        <div id="edit-error-${rv._id}" class="error" style="display:none; margin-top:8px"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// --- Event delegation for Edit/Delete/Save/Cancel ---
+document.addEventListener('click', async (e) => {
+  // Edit
+  if (e.target.matches('.btn-edit')) {
+    const id = e.target.dataset.id;
+    const rating = Number(e.target.dataset.rating || 5);
+    const title  = decodeURIComponent(e.target.dataset.title || '');
+    const body   = decodeURIComponent(e.target.dataset.body || '');
+
+    // prefill
+    document.getElementById(`edit-rating-${id}`).value = rating;
+    document.getElementById(`edit-title-${id}`).value  = title;
+    document.getElementById(`edit-body-${id}`).value   = body;
+
+    document.getElementById(`edit-${id}`).style.display = 'block';
+    document.getElementById(`card-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // Cancel
+  if (e.target.matches('.btn-cancel')) {
+    const id = e.target.dataset.id;
+    document.getElementById(`edit-${id}`).style.display = 'none';
+    return;
+  }
+
+  // Save (with loading state)
+  if (e.target.matches('.btn-save')) {
+    const id = e.target.dataset.id;
+    const rating = Number(document.getElementById(`edit-rating-${id}`).value);
+    const title  = document.getElementById(`edit-title-${id}`).value.trim();
+    const body   = document.getElementById(`edit-body-${id}`).value.trim();
+    const errBox = document.getElementById(`edit-error-${id}`);
+    const saveBtn = e.target;
+
+    // simple validation
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return showInlineError(errBox, "Rating must be 1–5.");
+    if (!title) return showInlineError(errBox, "Title is required.");
+    if (!body)  return showInlineError(errBox, "Review body is required.");
+
+    // disable during request
+    const originalLabel = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    errBox.style.display = "none";
+
+    try {
+      const payload = { rating, title, body, photos: [] };
+      const res = await fetch(`/api/reviews/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        await loadMyReviews();   // refresh list to reflect changes
+      } else {
+        const err = await res.json().catch(()=>({error:"Error"}));
+        showInlineError(errBox, Array.isArray(err.error) ? err.error.join(", ") : (err.error || "Error updating review"));
+        // re-enable on error
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalLabel;
+      }
+    } catch (err) {
+      showInlineError(errBox, "Network error while saving.");
+      saveBtn.disabled = false;
+      saveBtn.textContent = originalLabel;
+    }
+    return;
+  }
+
+  // Delete (with loading state)
+  if (e.target.matches('.btn-delete')) {
+    const id = e.target.dataset.id;
+    if (!confirm("Delete this review? This cannot be undone.")) return;
+
+    const deleteBtn = e.target;
+    const original = deleteBtn.textContent;
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting…";
+
+    try {
+      const res = await fetch(`/api/reviews/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadMyReviews();
+      } else {
+        const err = await res.json().catch(()=>({error:"Error"}));
+        alert(Array.isArray(err.error) ? err.error.join(", ") : (err.error || "Error deleting review"));
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = original;
+      }
+    } catch (err) {
+      alert("Network error while deleting.");
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = original;
+    }
+    return;
+  }
+});
+
+// --- helpers ---
+function showInlineError(el, msg) {
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+loadMyReviews();
+</script>

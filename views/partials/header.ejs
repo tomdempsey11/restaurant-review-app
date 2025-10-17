@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title || "Restaurant Reviews" %></title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="logo">🍽️ Restaurant Reviews</div>
+  <nav class="nav">
+    <a href="/">Home</a>
+    <a href="/restaurants">Browse</a>
+
+    <% if (user) { %>
+      <form action="/auth/logout" method="POST" style="display:inline">
+        <button class="link-like">Logout</button>
+      </form>
+    <% } else { %>
+      <a href="/auth/login">Login</a>
+      <a href="/auth/signup">Sign Up</a>
+    <% } %>
+  </nav>
+</header>
+<main class="content">

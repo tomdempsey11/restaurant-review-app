@@ -1,0 +1,16 @@
+<%- include('../partials/header', { title, user: null }) %>
+
+<h2>Login</h2>
+<% if (typeof error !== 'undefined') { %>
+  <div class="error"><%= error %></div>
+<% } %>
+<form method="POST" action="/auth/login" class="form-stack">
+  <label>Email</label>
+  <input type="email" name="email" required />
+  <label>Password</label>
+  <input type="password" name="password" required />
+  <button type="submit">Login</button>
+</form>
+<p><a href="/auth/signup">Create an account</a></p>
+
+<%- include('../partials/footer') %>

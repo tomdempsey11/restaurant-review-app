@@ -1,0 +1,65 @@
+<%- include('../partials/header', { title, user }) %>
+
+<h2>Write a Review</h2>
+<p style="margin-top:-6px;color:#666">for: <code><%= slug %></code></p>
+
+<div id="status" class="error" style="display:none"></div>
+
+<form id="reviewForm" class="form-stack" onsubmit="submitReview(event)">
+  <label>Rating (1–5)</label>
+  <input type="number" id="rating" min="1" max="5" required />
+
+  <label>Title</label>
+  <input type="text" id="title" required />
+
+  <label>Review</label>
+  <textarea id="body" rows="5" required></textarea>
+
+  <button type="submit">Submit Review</button>
+  <a class="link-like" href="/restaurants/<%= slug %>" style="margin-left:8px">Cancel</a>
+</form>
+
+<script>
+async function submitReview(e) {
+  e.preventDefault();
+  const slug = "<%= slug %>";
+
+  // 1) Look up the restaurant by slug to get its _id
+  const r = await fetch(`/api/restaurants/${slug}`);
+  if (r.status !== 200) {
+    return showError("Restaurant not found.");
+  }
+  const { restaurant } = await r.json();
+
+  // 2) Build payload from the form
+  const payload = {
+    rating: Number(document.getElementById('rating').value),
+    title: document.getElementById('title').value.trim(),
+    body: document.getElementById('body').value.trim(),
+    photos: []
+  };
+
+  // 3) POST to your existing API
+  const res = await fetch(`/api/reviews/${restaurant._id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  // 4) Success → back to details; Error → show message
+  if (res.status === 201) {
+    window.location.href = `/restaurants/${slug}`;
+  } else {
+    const err = await res.json().catch(()=>({error:"Unknown error"}));
+    showError(Array.isArray(err.error) ? err.error.join(", ") : (err.error || "Error"));
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+</script>
+
+<%- include('../partials/footer') %>

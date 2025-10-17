@@ -1,0 +1,17 @@
+<%- include('partials/header', { title, user }) %>
+
+<section class="hero">
+  <h1>Discover and review great places to eat</h1>
+  <form class="search" action="/api/restaurants" method="GET">
+    <input type="text" name="q" placeholder="Search by name or cuisine" />
+    <button>Search</button>
+  </form>
+</section>
+
+<section class="cards">
+  <div class="card">Featured #1</div>
+  <div class="card">Featured #2</div>
+  <div class="card">Featured #3</div>
+</section>
+
+<%- include('partials/footer') %>
