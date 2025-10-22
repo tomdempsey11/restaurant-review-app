@@ -1,3 +1,4 @@
+// src/models/Restaurant.js
 import mongoose from "mongoose";
 
 const restaurantSchema = new mongoose.Schema({
@@ -8,7 +9,9 @@ const restaurantSchema = new mongoose.Schema({
   address: { type: String, required: true },
   openHours: { type: String, default: "" },
   photos: [{ type: String }],
-  avgRating: { type: Number, default: 0 }
+  avgRating: { type: Number, default: 0 },
 }, { timestamps: true });
 
-export const Restaurant = mongoose.model("Restaurant", restaurantSchema);
+// ✅ Named export (back to your original style)
+export const Restaurant =
+  mongoose.models.Restaurant || mongoose.model("Restaurant", restaurantSchema);

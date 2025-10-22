@@ -1,0 +1,58 @@
+<%- include('../partials/header', { title, user }) %>
+<main class="container" style="max-width:1100px;margin:0 auto;padding:1.5rem">
+  <h1>Contact Messages</h1>
+
+  <form method="GET" action="/admin/contact-messages" style="display:flex;gap:8px;align-items:center;margin:12px 0">
+    <input type="text" name="q" value="<%= q || '' %>" placeholder="Search name, email, subject, message" style="flex:1;padding:.5rem">
+    <button class="btn btn-primary">Search</button>
+    <% if (q) { %><a class="btn" href="/admin/contact-messages">Clear</a><% } %>
+  </form>
+
+  <p style="margin:.25rem 0;color:#555"><%= total %> message<%= total === 1 ? '' : 's' %></p>
+
+  <div style="overflow:auto">
+    <table class="table" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:.5rem;border-bottom:1px solid #ddd">Date</th>
+          <th style="text-align:left;padding:.5rem;border-bottom:1px solid #ddd">Name</th>
+          <th style="text-align:left;padding:.5rem;border-bottom:1px solid #ddd">Email</th>
+          <th style="text-align:left;padding:.5rem;border-bottom:1px solid #ddd">Subject</th>
+          <th style="text-align:left;padding:.5rem;border-bottom:1px solid #ddd">Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!messages.length) { %>
+          <tr>
+            <td colspan="5" style="padding:1rem;color:#666">No messages found.</td>
+          </tr>
+        <% } %>
+        <% messages.forEach(m => { %>
+          <tr>
+            <td style="vertical-align:top;padding:.5rem"><%= new Date(m.createdAt).toLocaleString() %></td>
+            <td style="vertical-align:top;padding:.5rem"><%= m.name %></td>
+            <td style="vertical-align:top;padding:.5rem">
+              <a href="mailto:<%= m.email %>"><%= m.email %></a>
+            </td>
+            <td style="vertical-align:top;padding:.5rem"><%= m.subject %></td>
+            <td style="vertical-align:top;padding:.5rem;white-space:pre-wrap"><%= m.message %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalPages > 1) { %>
+    <nav style="display:flex;gap:8px;justify-content:center;margin-top:16px">
+      <% for (let i = 1; i <= totalPages; i++) { %>
+        <a
+          href="/admin/contact-messages?<%= q ? ('q=' + encodeURIComponent(q) + '&') : '' %>page=<%= i %>"
+          class="<%= (i === page) ? 'active' : '' %>"
+          style="padding:.4rem .7rem;border:1px solid #ddd;border-radius:6px;text-decoration:none;<%= (i === page) ? 'font-weight:700' : '' %>">
+          <%= i %>
+        </a>
+      <% } %>
+    </nav>
+  <% } %>
+</main>
+<%- include('../partials/footer') %>

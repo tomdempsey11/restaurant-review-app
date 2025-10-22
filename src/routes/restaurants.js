@@ -1,10 +1,14 @@
+// src/routes/restaurants.js
 import { Router } from "express";
-import { listRestaurants, getBySlug, createRestaurant, updateRestaurant, deleteRestaurant } from "../controllers/restaurantController.js";
+// ⬇️ replace the list import with the stats-enabled one:
+import { listRestaurantsWithStats } from "../controllers/restaurantsApi.js";
+import { getBySlug, createRestaurant, updateRestaurant, deleteRestaurant } from "../controllers/restaurantController.js";
 import { ensureAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
-router.get("/", listRestaurants);
+// Public
+router.get("/", listRestaurantsWithStats);  // now returns avgRating + reviewCount
 router.get("/:slug", getBySlug);
 
 // Admin

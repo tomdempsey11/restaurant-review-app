@@ -1,0 +1,40 @@
+<%- include('../../partials/header', { title: (mode === 'create' ? 'New' : 'Edit') + ' Restaurant', user }) %>
+
+<h2><%= mode === 'create' ? 'Create Restaurant' : 'Edit Restaurant' %></h2>
+
+<form action="<%= mode === 'create' ? '/admin/restaurants' : '/admin/restaurants/' + restaurant._id %>" method="POST" style="max-width:700px">
+  <div class="form-group">
+    <label for="name">Name *</label>
+    <input id="name" name="name" type="text" required value="<%= restaurant.name || '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="cuisine">Cuisine</label>
+    <input id="cuisine" name="cuisine" type="text" value="<%= restaurant.cuisine || '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="address">Address</label>
+    <input id="address" name="address" type="text" value="<%= restaurant.address || '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="phone">Phone</label>
+    <input id="phone" name="phone" type="text" value="<%= restaurant.phone || '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="website">Website</label>
+    <input id="website" name="website" type="url" value="<%= restaurant.website || '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description</label>
+    <textarea id="description" name="description" rows="4"><%= restaurant.description || '' %></textarea>
+  </div>
+
+  <button class="btn btn-success"><%= mode === 'create' ? 'Create' : 'Save Changes' %></button>
+  <a class="btn" href="/admin/restaurants">Cancel</a>
+</form>
+
+<%- include('../../partials/footer') %>

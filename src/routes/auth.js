@@ -1,5 +1,12 @@
+// src/routes/auth.js
 import { Router } from "express";
-import { getLogin, getSignup, postSignup, postLogin, postLogout } from "../controllers/authController.js";
+import {
+  getLogin,
+  getSignup,
+  postSignup,
+  postLogin,
+  postLogout,
+} from "../controllers/authController.js";
 
 const router = Router();
 

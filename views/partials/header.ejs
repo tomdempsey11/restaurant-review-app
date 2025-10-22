@@ -10,8 +10,9 @@
 <header class="site-header">
   <div class="logo">🍽️ Restaurant Reviews</div>
   <nav class="nav">
-    <a href="/">Home</a>
-    <a href="/restaurants">Browse</a>
+    <a href="/" class="<%= (currentPath === '/') ? 'active' : '' %>">Home</a>
+    <a href="/restaurants" class="<%= (currentPath === '/restaurants') ? 'active' : '' %>">Browse</a>
+    <a href="/contact" class="<%= (currentPath === '/contact') ? 'active' : '' %>">Contact</a>
 
     <% if (user) { %>
       <form action="/auth/logout" method="POST" style="display:inline">

@@ -1,0 +1,47 @@
+<%- include('partials/header', { title: 'Contact', user }) %>
+
+<main class="container" style="max-width:900px;margin:0 auto;padding:1.5rem">
+  <h1>Contact</h1>
+
+  <% if (typeof flash !== 'undefined') { %>
+    <% (flash('success') || []).forEach(msg => { %>
+      <div class="alert alert-success" role="alert"><%= msg %></div>
+    <% }) %>
+  <% } %>
+
+  <% if (errors && errors.length) { %>
+    <div class="alert alert-danger" role="alert">
+      <ul style="margin:0;padding-left:1rem">
+        <% errors.forEach(e => { %>
+          <li><%= e.msg %></li>
+        <% }) %>
+      </ul>
+    </div>
+  <% } %>
+
+  <form action="/api/contact" method="POST" style="display:grid;gap:12px">
+    <div>
+      <label for="name">Name</label>
+      <input id="name" name="name" value="<%= values?.name || '' %>" required>
+    </div>
+
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" value="<%= values?.email || '' %>" required>
+    </div>
+
+    <div>
+      <label for="subject">Subject</label>
+      <input id="subject" name="subject" value="<%= values?.subject || '' %>" required>
+    </div>
+
+    <div>
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="6" required><%= values?.message || '' %></textarea>
+    </div>
+
+    <button class="btn btn-primary">Send</button>
+  </form>
+</main>
+
+<%- include('partials/footer') %>

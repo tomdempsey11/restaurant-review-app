@@ -1,54 +1,132 @@
 <%- include('../partials/header', { title, user }) %>
 
-<h2>Browse Restaurants</h2>
+<section class="container" style="max-width:980px;margin:32px auto;">
+  <h2 style="margin-bottom:16px;">Browse Restaurants</h2>
 
-<form id="filters" class="search" onsubmit="event.preventDefault(); loadRestaurants();">
-  <input type="text" id="q" placeholder="Search name or cuisine"/>
-  <select id="cuisine">
-    <option value="">All cuisines</option>
-    <option>Italian</option><option>Japanese</option><option>Mexican</option>
-  </select>
-  <select id="price">
-    <option value="">All prices</option>
-    <option>$</option><option>$$</option><option>$$$</option><option>$$$$</option>
-  </select>
-  <button>Apply</button>
-</form>
+  <form id="filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+    <input type="text" id="q" name="q" placeholder="Search name or cuisine" />
+    <select id="cuisine" name="cuisine">
+      <option value="">All cuisines</option>
+      <option>Italian</option>
+      <option>Mexican</option>
+      <option>Japanese</option>
+      <option>Chinese</option>
+      <option>American</option>
+      <option>Indian</option>
+      <option>Thai</option>
+      <option>Mediterranean</option>
+    </select>
+    <select id="price" name="price">
+      <option value="">All prices</option>
+      <option value="$">$</option>
+      <option value="$$">$$</option>
+      <option value="$$$">$$$</option>
+      <option value="$$$$">$$$$</option>
+    </select>
+    <button type="submit">Apply</button>
+    <button type="button" id="clearBtn">Clear</button>
+  </form>
 
-<div id="grid" class="cards" style="margin-top:16px"></div>
-<div id="pager" style="margin-top:12px"></div>
+  <div id="results"></div>
+
+  <div id="pager" style="display:flex; gap:8px; margin-top:16px;"></div>
+</section>
 
 <script>
-async function loadRestaurants(page = 1) {
-  const q = document.getElementById('q').value.trim();
-  const cuisine = document.getElementById('cuisine').value;
-  const price = document.getElementById('price').value;
-  const params = new URLSearchParams({ page });
-  if (q) params.append('q', q);
-  if (cuisine) params.append('cuisine', cuisine);
-  if (price) params.append('price', price);
+  const resultsEl = document.getElementById('results');
+  const pagerEl   = document.getElementById('pager');
+  const form      = document.getElementById('filters');
+  const qEl       = document.getElementById('q');
+  const cuisineEl = document.getElementById('cuisine');
+  const priceEl   = document.getElementById('price');
+  const clearBtn  = document.getElementById('clearBtn');
 
-  const res = await fetch(`/api/restaurants?${params.toString()}`);
-  const data = await res.json();
+  function getParams(page=1) {
+    const p = new URLSearchParams();
+    if (qEl.value.trim())      p.set('q', qEl.value.trim());
+    if (cuisineEl.value)       p.set('cuisine', cuisineEl.value);
+    if (priceEl.value)         p.set('price', priceEl.value);
+    p.set('page', page);
+    return p.toString();
+  }
 
-  const grid = document.getElementById('grid');
-  grid.innerHTML = data.items.map(r => `
-    <a class="card" href="/restaurants/${r.slug}">
-      <div><strong>${r.name}</strong></div>
-      <div>${r.cuisine} • ${r.priceRange}</div>
-      <div>★ ${r.avgRating || 0}</div>
-    </a>
-  `).join('');
+  // Renders "★ 4.5 (12 reviews)" or "No reviews yet"
+  function ratingBadge(r) {
+    const hasNumber = typeof r.avgRating === 'number' && !Number.isNaN(r.avgRating);
+    if (hasNumber) {
+      const count = r.reviewCount ?? 0;
+      return `★ ${r.avgRating} (${count} review${count === 1 ? '' : 's'})`;
+    }
+    return 'No reviews yet';
+  }
 
-  const pager = document.getElementById('pager');
-  const pages = data.pages || 1;
-  pager.innerHTML = `
-    <button ${data.page<=1?'disabled':''} onclick="loadRestaurants(${data.page-1})">Prev</button>
-    <span style="margin:0 8px">Page ${data.page} of ${pages}</span>
-    <button ${data.page>=pages?'disabled':''} onclick="loadRestaurants(${data.page+1})">Next</button>
-  `;
-}
-loadRestaurants();
+  async function load(page=1) {
+    resultsEl.innerHTML = 'Loading…';
+    pagerEl.innerHTML = '';
+    try {
+      const qs = getParams(page);
+      const res = await fetch('/api/restaurants?' + qs, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load restaurants');
+      const data = await res.json();
+      const items = data.items || data.restaurants || []; // be flexible with API shape
+
+      if (!items.length) {
+        resultsEl.innerHTML = '<p>No restaurants available yet.</p>';
+      } else {
+        resultsEl.innerHTML = `
+          <ul style="list-style:none;padding:0;margin:0;">
+            ${items.map(r => `
+              <li style="margin:12px 0; padding:12px; border:1px solid #eee; border-radius:8px;">
+                <a href="/restaurants/${r.slug}" style="font-weight:600; text-decoration:none;">
+                  ${escapeHtml(r.name)}
+                </a>
+                <div class="muted" style="margin-top:4px;">
+                  ${ratingBadge(r)}
+                </div>
+                <div style="margin-top:4px;">
+                  ${escapeHtml(r.cuisine || '')} ${r.priceRange ? '• ' + r.priceRange : ''}
+                </div>
+                <div>${escapeHtml(r.address || '')}</div>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+      }
+
+      const pageNum  = data.page || 1;
+      const pagesNum = data.pages || 1;
+      if (pagesNum > 1) {
+        pagerEl.innerHTML = `
+          <button ${pageNum<=1?'disabled':''} data-page="${pageNum-1}">Prev</button>
+          <span>Page ${pageNum} / ${pagesNum}</span>
+          <button ${pageNum>=pagesNum?'disabled':''} data-page="${pageNum+1}">Next</button>
+        `;
+        [...pagerEl.querySelectorAll('button[data-page]')].forEach(btn=>{
+          btn.addEventListener('click', ()=> load(parseInt(btn.dataset.page, 10)));
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      resultsEl.innerHTML = '<p style="color:#b91c1c;">Error loading restaurants.</p>';
+    }
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    load(1);
+  });
+  clearBtn.addEventListener('click', () => {
+    qEl.value = '';
+    cuisineEl.value = '';
+    priceEl.value = '';
+    load(1);
+  });
+
+  // simple HTML escaper
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // initial load
+  load(1);
 </script>
 
 <%- include('../partials/footer') %>

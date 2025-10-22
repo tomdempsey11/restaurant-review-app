@@ -1,3 +1,4 @@
+// src/app.js
 import express from "express";
 import morgan from "morgan";
 import helmet from "helmet";
@@ -14,9 +15,19 @@ import authRouter from "./routes/auth.js";
 import restaurantRouter from "./routes/restaurants.js";
 import reviewRouter from "./routes/reviews.js";
 import userRouter from "./routes/users.js";
-import contactRouter from "./routes/contact.js";
 import pagesRouter from "./routes/pages.js";
-import userPagesRouter from "./routes/userPages.js"; // ✅ ADD THIS
+import userPagesRouter from "./routes/userPages.js";
+
+// Admin + guards
+import adminRouter from "./routes/admin.js";
+import ensureLoggedIn from "./middleware/ensureLoggedIn.js";
+import ensureAdmin from "./middleware/ensureAdmin.js";
+
+// ✅ NEW: Admin Contact routes (list/search contact messages)
+import adminContactRouter from "./routes/adminContact.js";
+
+// Contact (ESM)
+import contactRouter from "./routes/contact.js";
 
 dotenv.config();
 
@@ -29,11 +40,12 @@ export const app = express();
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "ejs");
 
+// Security
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-    hsts: false
+    hsts: false,
   })
 );
 
@@ -46,18 +58,30 @@ app.use(cookieParser());
 // Sessions BEFORE routers
 app.use(session(sessionConfig()));
 
-// Make `user` available to all views
+// Make user available everywhere
 app.use((req, res, next) => {
-  res.locals.user = req.session?.user || null;
+  req.user = req.session?.user || null;
+  res.locals.user = req.user;
+  next();
+});
+
+// Current path helper for active nav
+app.use((req, res, next) => {
+  res.locals.currentPath = req.path;
   next();
 });
 
 // Static files
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Page routers (server-rendered)
+// Server-rendered pages
 app.use("/restaurants", pagesRouter);
-app.use("/", userPagesRouter); // ✅ ADD THIS (exposes /me)
+app.use("/", userPagesRouter); // exposes /me, etc.
+
+// Admin (guarded)
+app.use("/admin", ensureLoggedIn, ensureAdmin, adminRouter);
+// ✅ NEW: Mount admin contact routes under the same guards
+app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
 
 // API routers
 app.use("/", indexRouter);
@@ -65,17 +89,23 @@ app.use("/auth", authRouter);
 app.use("/api/restaurants", restaurantRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/users", userRouter);
-app.use("/api/contact", contactRouter);
+
+// Contact routes (no prefix): GET /contact, POST /api/contact
+app.use(contactRouter);
 
 // 404
 app.use((req, res) => {
-  if (req.accepts("html")) return res.status(404).render("404", { title: "Not Found" });
+  if (req.accepts("html")) {
+    return res.status(404).render("404", { title: "Not Found" });
+  }
   res.status(404).json({ error: "Not Found" });
 });
 
 // 500
 app.use((err, req, res, next) => {
   console.error(err);
-  if (req.accepts("html")) return res.status(500).render("500", { title: "Server Error" });
+  if (req.accepts("html")) {
+    return res.status(500).render("500", { title: "Server Error" });
+  }
   res.status(500).json({ error: "Server Error" });
 });

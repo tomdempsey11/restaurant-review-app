@@ -1,65 +1,86 @@
 <%- include('../partials/header', { title, user }) %>
 
-<h2>Write a Review</h2>
-<p style="margin-top:-6px;color:#666">for: <code><%= slug %></code></p>
+<section class="container" style="max-width:720px;margin:32px auto;">
+  <h2>Write a Review</h2>
+  <p id="rname" style="color:#555;"></p>
 
-<div id="status" class="error" style="display:none"></div>
+  <form id="reviewForm" style="display:grid; gap:12px; max-width:560px;">
+    <label>
+      Rating (1–5)
+      <input type="number" name="rating" id="rating" min="1" max="5" required>
+    </label>
 
-<form id="reviewForm" class="form-stack" onsubmit="submitReview(event)">
-  <label>Rating (1–5)</label>
-  <input type="number" id="rating" min="1" max="5" required />
+    <label>
+      Title (optional)
+      <input type="text" name="title" id="title" maxlength="120">
+    </label>
 
-  <label>Title</label>
-  <input type="text" id="title" required />
+    <label>
+      Review
+      <textarea name="body" id="body" rows="5" required></textarea>
+    </label>
 
-  <label>Review</label>
-  <textarea id="body" rows="5" required></textarea>
+    <button class="btn btn-success" type="submit">Submit Review</button>
+    <a class="btn" href="/restaurants/<%= slug %>">Cancel</a>
+  </form>
 
-  <button type="submit">Submit Review</button>
-  <a class="link-like" href="/restaurants/<%= slug %>" style="margin-left:8px">Cancel</a>
-</form>
+  <p id="msg" style="margin-top:12px;"></p>
+</section>
 
 <script>
-async function submitReview(e) {
-  e.preventDefault();
   const slug = "<%= slug %>";
+  const form = document.getElementById('reviewForm');
+  const msg  = document.getElementById('msg');
+  const rname= document.getElementById('rname');
+  let restaurantId = null;
 
-  // 1) Look up the restaurant by slug to get its _id
-  const r = await fetch(`/api/restaurants/${slug}`);
-  if (r.status !== 200) {
-    return showError("Restaurant not found.");
-  }
-  const { restaurant } = await r.json();
+  // Load restaurant to get its _id
+  (async function loadRestaurant() {
+    try {
+      const res = await fetch(`/api/restaurants/${encodeURIComponent(slug)}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Restaurant not found');
+      const data = await res.json();
+      const r = data.restaurant || data;
+      restaurantId = r._id;
+      rname.textContent = r.name ? `for ${r.name}` : '';
+    } catch (err) {
+      console.error(err);
+      msg.textContent = 'Unable to load restaurant.';
+      msg.style.color = '#b91c1c';
+      form.style.display = 'none';
+    }
+  })();
 
-  // 2) Build payload from the form
-  const payload = {
-    rating: Number(document.getElementById('rating').value),
-    title: document.getElementById('title').value.trim(),
-    body: document.getElementById('body').value.trim(),
-    photos: []
-  };
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.textContent = '';
+    if (!restaurantId) return;
 
-  // 3) POST to your existing API
-  const res = await fetch(`/api/reviews/${restaurant._id}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    const payload = {
+      rating: Number(document.getElementById('rating').value),
+      title:  document.getElementById('title').value.trim(),
+      body:   document.getElementById('body').value.trim(),
+    };
+
+    try {
+      const res = await fetch(`/api/reviews/${restaurantId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to submit review');
+      }
+      // back to details
+      window.location.href = `/restaurants/${slug}`;
+    } catch (err) {
+      console.error(err);
+      msg.textContent = err.message;
+      msg.style.color = '#b91c1c';
+    }
   });
-
-  // 4) Success → back to details; Error → show message
-  if (res.status === 201) {
-    window.location.href = `/restaurants/${slug}`;
-  } else {
-    const err = await res.json().catch(()=>({error:"Unknown error"}));
-    showError(Array.isArray(err.error) ? err.error.join(", ") : (err.error || "Error"));
-  }
-}
-
-function showError(msg) {
-  const el = document.getElementById("status");
-  el.textContent = msg;
-  el.style.display = "block";
-}
 </script>
 
 <%- include('../partials/footer') %>

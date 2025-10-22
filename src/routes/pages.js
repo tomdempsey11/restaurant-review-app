@@ -1,26 +1,33 @@
 // src/routes/pages.js
 import { Router } from "express";
+
 const router = Router();
 
-// Only allow logged-in users to view certain pages
-function ensurePageAuth(req, res, next) {
-  if (req.session?.user) return next();
-  return res.redirect(`/auth/login?next=${encodeURIComponent(req.originalUrl)}`);
-}
-
-// Browse page shell (client fetches /api/restaurants)
+// Public list page (client will call /api/restaurants)
 router.get("/", (req, res) => {
-  res.render("restaurants/list", { title: "Browse Restaurants" });
+  res.render("restaurants/list", {
+    title: "Browse Restaurants",
+  });
 });
 
-// Restaurant details shell (client fetches /api/restaurants/:slug)
+// Public details page (client will call /api/restaurants/:slug)
 router.get("/:slug", (req, res) => {
-  res.render("restaurants/show", { title: "Restaurant Details", slug: req.params.slug });
+  res.render("restaurants/show", {
+    title: "Restaurant",
+    slug: req.params.slug,
+  });
 });
 
-// ✅ Write Review page (PROTECTED)
-router.get("/:slug/reviews/new", ensurePageAuth, (req, res) => {
-  res.render("restaurants/write-review", { title: "Write a Review", slug: req.params.slug });
+// Auth-gated: write a review page
+router.get("/:slug/reviews/new", (req, res) => {
+  if (!req.user) {
+    const nextUrl = `/restaurants/${req.params.slug}/reviews/new`;
+    return res.redirect(`/auth/login?next=${encodeURIComponent(nextUrl)}`);
+  }
+  res.render("restaurants/write-review", {
+    title: "Write a Review",
+    slug: req.params.slug,
+  });
 });
 
 export default router;
