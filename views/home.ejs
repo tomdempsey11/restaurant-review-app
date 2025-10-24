@@ -1,17 +1,18 @@
 <%- include('partials/header', { title, user }) %>
 
-<section class="hero">
-  <h1>Discover and review great places to eat</h1>
+<section class="hero page-section">
+  <h1 class="hero__title">Discover and review great places to eat</h1>
+
   <form class="search" action="/api/restaurants" method="GET">
-    <input type="text" name="q" placeholder="Search by name or cuisine" />
-    <button>Search</button>
+    <input class="input" type="text" name="q" placeholder="Search by name or cuisine" />
+    <button class="btn btn--primary" type="submit">Search</button>
   </form>
 </section>
 
-<section class="cards">
-  <div class="card">Featured #1</div>
-  <div class="card">Featured #2</div>
-  <div class="card">Featured #3</div>
+<section class="cards container container--narrow">
+  <div class="card card--feature">Featured #1</div>
+  <div class="card card--feature">Featured #2</div>
+  <div class="card card--feature">Featured #3</div>
 </section>
 
 <%- include('partials/footer') %>

@@ -1,16 +1,31 @@
-<%- include('../partials/header', { title, user: null }) %>
+<%- include('../partials/header', { title: 'Log In' }) %>
 
-<h2>Login</h2>
-<% if (typeof error !== 'undefined') { %>
-  <div class="error"><%= error %></div>
-<% } %>
-<form method="POST" action="/auth/login" class="form-stack">
-  <label>Email</label>
-  <input type="email" name="email" required />
-  <label>Password</label>
-  <input type="password" name="password" required />
-  <button type="submit">Login</button>
-</form>
-<p><a href="/auth/signup">Create an account</a></p>
+<section class="container container--narrow page-section">
+  <h2 class="m-0 mb-4">Log In</h2>
+
+  <% const _error = (typeof error !== 'undefined' && error) ? error : null; %>
+  <% if (_error) { %>
+    <div class="alert alert--error mb-4" role="alert"><%= _error %></div>
+  <% } %>
+
+  <form method="POST" action="/auth/login" class="card form-grid">
+    <div class="form-row">
+      <label>Email <span class="required">*</span>
+        <input class="input" type="email" name="email" value="<%= (typeof values !== 'undefined' && values && values.email) ? values.email : '' %>" required>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>Password <span class="required">*</span>
+        <input class="input" type="password" name="password" required>
+      </label>
+    </div>
+
+    <div class="row-between gap-2">
+      <button class="btn btn--primary" type="submit">Log In</button>
+      <a class="back-link" href="/auth/signup">Need an account? Sign up</a>
+    </div>
+  </form>
+</section>
 
 <%- include('../partials/footer') %>

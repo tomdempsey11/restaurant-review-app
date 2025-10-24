@@ -1,3 +1,13 @@
+// Import order matters: tokens → helpers → layout → components
+@import 'variables';
+@import 'mixins';
+@import 'layout';
+@import 'components';
+
+/* ---- TEMP: paste your entire existing styles.css below ---- */
+/* Move rules out of here into the partials over time. */
+
+
 :root {
   --bg: #f7f7f9;
   --ink: #222;

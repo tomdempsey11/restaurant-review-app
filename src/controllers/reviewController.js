@@ -3,37 +3,33 @@ import { Restaurant } from "../models/Restaurant.js";
 import { Review } from "../models/Review.js";
 import { reviewSchema } from "../utils/validators.js";
 
-const toObjectId = (id) => (id instanceof mongoose.Types.ObjectId ? id : new mongoose.Types.ObjectId(id));
+const toObjectId = (id) =>
+  (id instanceof mongoose.Types.ObjectId ? id : new mongoose.Types.ObjectId(id));
 
-async function recalcAverage(restaurantId) {
+// 🔁 Recalculate BOTH avgRating and reviewCount on the Restaurant doc
+async function recalcRestaurantStats(restaurantId) {
   const rid = toObjectId(restaurantId);
   const agg = await Review.aggregate([
     { $match: { restaurantId: rid } },
-    { $group: { _id: "$restaurantId", avg: { $avg: "$rating" }, count: { $sum: 1 } } }
+    { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } }
   ]);
-  const avg = agg[0]?.avg ?? 0;
-  await Restaurant.findByIdAndUpdate(rid, { avgRating: Math.round(avg * 10) / 10 });
+  const avg = agg[0]?.avg ?? null;
+  const count = agg[0]?.count ?? 0;
+  await Restaurant.findByIdAndUpdate(rid, {
+    avgRating: avg === null ? null : Math.round(avg * 10) / 10,
+    reviewCount: count
+  });
 }
 
 // Helper to get the current user's id safely
 function currentUserId(req) {
-  return req.user?._id || req.session?.user?.id || req.session?.user?._id;
+  return req.user?._id || req.user?.id || req.session?.user?._id || req.session?.user?.id;
 }
 
 export const createReview = async (req, res, next) => {
   try {
-    console.log("🧩 createReview debug:", {
-      sessionUser: req.session?.user,
-      reqUser: req.user,
-      restaurantId: req.params.restaurantId,
-    });
-
     const { rating, title, body } = req.body;
-
-    // ✅ Fixed line
-    const userId =
-      req.user?._id || req.user?.id || req.session?.user?._id || req.session?.user?.id;
-
+    const userId = currentUserId(req);
     const restaurantId = req.params.restaurantId;
 
     if (!userId || !restaurantId) {
@@ -41,6 +37,10 @@ export const createReview = async (req, res, next) => {
     }
 
     const doc = await Review.create({ userId, restaurantId, rating, title, body });
+
+    // 👇 keep Restaurant in sync
+    await recalcRestaurantStats(restaurantId);
+
     return res.status(201).json(doc);
   } catch (err) {
     if (err && err.code === 11000) {
@@ -49,7 +49,6 @@ export const createReview = async (req, res, next) => {
     next(err);
   }
 };
-
 
 export const updateReview = async (req, res, next) => {
   try {
@@ -69,7 +68,9 @@ export const updateReview = async (req, res, next) => {
     Object.assign(review, value);
     await review.save();
 
-    await recalcAverage(review.restaurantId);
+    // 👇 recalc after edit
+    await recalcRestaurantStats(review.restaurantId);
+
     res.json(review);
   } catch (err) {
     next(err);
@@ -89,7 +90,10 @@ export const deleteReview = async (req, res, next) => {
     if (!isOwner && !isAdmin) return res.status(403).json({ error: "Forbidden" });
 
     await Review.findByIdAndDelete(id);
-    await recalcAverage(review.restaurantId);
+
+    // 👇 recalc after delete
+    await recalcRestaurantStats(review.restaurantId);
+
     res.json({ ok: true });
   } catch (err) {
     next(err);

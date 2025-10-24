@@ -1,0 +1,213 @@
+/* ---------------- Buttons ---------------- */
+.btn {
+  @include button-reset;
+  padding: .6rem 1rem;
+  border-radius: $radius-md;
+  background: $brand;
+  color: $white;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+}
+.btn--primary { background: $brand; color: $white; } // explicit variant if needed
+.btn--ghost   { background: transparent; color: $brand; border: 1px solid $brand; }
+.btn--danger  { background: $danger; color: $white; }
+.btn--sm      { padding: .4rem .7rem; font-size: .9rem; }
+
+.link-like { @include button-reset; text-decoration: underline; cursor: pointer; padding: 0; }
+
+.btn:disabled,
+.btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+/* ---------------- Inputs / Forms ---------------- */
+.input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  padding: .6rem .75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: $white;
+}
+.input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: $brand;
+  box-shadow: 0 0 0 3px rgba(14,165,233,.2);
+}
+
+.form-row { display: grid; gap: $space-3; }
+.form-row--2 { grid-template-columns: 1fr; @include mq(640px){ grid-template-columns: 1fr 1fr; } }
+
+.help-text { font-size: .9rem; color: $grey-700; opacity: .85; margin-top: -.25rem; }
+.required  { color: $danger; }
+
+/* 🔧 macOS Safari/Chrome select option visibility fix */
+select,
+select option { color: #111 !important; background-color: #fff !important; }
+select {
+  min-width: 140px;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  appearance: auto !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+}
+@media (prefers-color-scheme: dark) {
+  select,
+  select option { color: #fff !important; background-color: #222 !important; }
+}
+
+/* ---------------- Cards & Badges ---------------- */
+.card {
+  background: $white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  padding: $space-4;
+}
+.card--feature {
+  text-align: center;
+  padding: $space-6;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.card--feature:hover { transform: translateY(-4px); box-shadow: $shadow-md; }
+
+.badge {
+  display: inline-block;
+  padding: .2rem .5rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  background: $grey-100;
+  color: $grey-700;
+}
+
+/* ---------------- Lists / Borders / Spacing helpers ---------------- */
+.list-unstyled { list-style: none; padding: 0; margin: 0; }
+.border-top    { border-top: 1px solid #eee; }
+.py-3          { padding-top: .75rem; padding-bottom: .75rem; }
+.text-sm       { font-size: 12px; }
+.fw-600        { font-weight: 600; }
+.m-0           { margin: 0; }
+.mb-4          { margin-bottom: $space-4; }
+
+/* ---------------- Stars / Ratings ---------------- */
+.stars { letter-spacing: .1ch; color: #f59e0b; } // amber-ish
+.star-picker {
+  user-select: none; font-size: 1.6rem; line-height: 1;
+  cursor: pointer; display: inline-flex; gap: .25rem;
+}
+
+/* ---------------- Pager ---------------- */
+.pager { display: flex; gap: $space-2; align-items: center; }
+
+/* ---------------- Alerts ---------------- */
+.alert {
+  border-radius: $radius-md;
+  padding: $space-3 $space-4;
+  box-shadow: $shadow-sm;
+  border: 1px solid transparent;
+}
+.alert--success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.alert--error   { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+
+/* ---------------- Home: Search ---------------- */
+.search {
+  display: flex; justify-content: center; gap: $space-2;
+  flex-wrap: wrap; margin-top: $space-4;
+}
+.search .input { width: min(300px, 80%); }
+
+
+
+/* contact messages */
+
+/* Tables */
+.table-wrap { overflow: auto; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .95rem;
+}
+.table th, .table td {
+  text-align: left;
+  padding: .5rem;
+  vertical-align: top;
+  border-bottom: 1px solid #ddd;
+}
+.table thead th { font-weight: 600; }
+.prewrap { white-space: pre-wrap; }
+.text-muted { color: $grey-700; opacity: .9; }
+
+/* Pager */
+.pager { display: flex; gap: $space-2; align-items: center; }
+.pager--center { justify-content: center; }
+.page-link {
+  display: inline-block;
+  padding: .4rem .7rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  text-decoration: none;
+  color: $grey-900;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.page-link:hover { background: $grey-100; }
+.page-link.is-active { font-weight: 700; box-shadow: 0 0 0 2px rgba(14,165,233,.12) inset; }
+
+
+
+/* index.ejs */
+
+/* Button group spacing */
+.btn-group { display: inline-flex; gap: $space-2; align-items: center; }
+
+/* Tables (already added for contact messages; include here if you don't have them) */
+.table-wrap { overflow: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.table th, .table td { text-align: left; padding: .5rem; vertical-align: top; border-bottom: 1px solid #ddd; }
+.table thead th { font-weight: 600; }
+
+/* Pager (ditto) */
+.pager { display: flex; gap: $space-2; align-items: center; }
+.pager--center { justify-content: center; }
+.page-link { display:inline-block; padding:.4rem .7rem; border:1px solid #ddd; border-radius:6px; text-decoration:none; color:$grey-900; transition: background-color .15s ease, border-color .15s ease; }
+.page-link:hover { background:$grey-100; }
+.page-link.is-active { font-weight:700; box-shadow: 0 0 0 2px rgba(14,165,233,.12) inset; }
+
+
+
+
+
+/* --- Admin list header bar --- */
+.admin-bar {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  flex-wrap: nowrap;        /* keep on one line when there’s room */
+}
+
+.admin-bar__search {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  flex-wrap: nowrap;
+}
+
+/* Only override input width inside the admin bar’s search */
+.admin-bar__search .input {
+  width: clamp(240px, 32vw, 420px);
+}
+
+.admin-bar__cta { white-space: nowrap; } /* avoid breaking "+ New Restaurant" */
+
+/* On narrower screens, allow wrapping nicely */
+@include mq(900px) {
+  .admin-bar { flex-wrap: wrap; }
+  .admin-bar__search { flex: 1 1 auto; }
+}
+

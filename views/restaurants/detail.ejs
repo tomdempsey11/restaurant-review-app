@@ -1,41 +1,46 @@
 <%- include('../partials/header', { title: title || 'Restaurant', user }) %>
 
-<section class="container" style="max-width:980px;margin:32px auto;">
-  <a href="/restaurants" style="text-decoration:none;">← Back to Browse</a>
+<section class="container container--narrow page-section">
+  <a id="backLink" class="back-link" href="/restaurants">← Back to Browse</a>
 
   <div id="restaurant"></div>
 
-  <hr style="margin:24px 0;">
+  <hr class="divider">
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px;">
-    <h3 style="margin:0;">Reviews</h3>
+  <div class="row-between mb-2">
+    <h3 class="m-0">Reviews</h3>
 
     <% if (!user) { %>
-      <a class="btn" href="/auth/login?next=<%= encodeURIComponent(`/restaurants/${slug}`) %>">
+      <a class="btn btn--primary" href="/auth/login?next=<%= encodeURIComponent(`/restaurants/${slug}`) %>">
         Log in to write a review
       </a>
     <% } else { %>
-      <button id="toggleReviewBtn" class="btn btn-primary" type="button">Write a Review</button>
+      <button id="toggleReviewBtn" class="btn btn--primary" type="button">Write a Review</button>
     <% } %>
   </div>
 
   <% if (user) { %>
-  <form id="reviewForm" style="display:none;border:1px solid #eee;border-radius:8px;padding:12px;margin:8px 0;">
-    <div style="display:grid;gap:10px;">
+  <form id="reviewForm" class="card hidden">
+    <div class="form-grid">
+      <!-- ⭐ Star picker replaces the numeric input -->
       <label>
-        Rating (1–5)
-        <input type="number" name="rating" min="1" max="5" required>
+        Rating
+        <div id="starPicker" class="star-picker" aria-label="Choose rating from 1 to 5"></div>
+        <input type="hidden" name="rating" id="ratingInput" required>
       </label>
+
       <label>
         Title
-        <input type="text" name="title" maxlength="120" required>
+        <input class="input" type="text" name="title" maxlength="120" required>
       </label>
+
       <label>
         Body
-        <textarea name="body" rows="4" required></textarea>
+        <textarea class="input" name="body" rows="4" required></textarea>
       </label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn btn-primary" type="submit">Submit Review</button>
+
+      <div class="row-between gap-2">
+        <button class="btn btn--primary" type="submit">Submit Review</button>
         <span id="reviewMsg" class="muted"></span>
       </div>
     </div>
@@ -45,7 +50,33 @@
   <div id="reviews"></div>
 </section>
 
+
 <script>
+    // Smart "Back to Browse" that preserves filters & scroll
+    (function () {
+    const back = document.getElementById('backLink');
+    if (!back) return;
+
+    // If we navigated here from /restaurants, use real history back to keep filters + scroll
+    try {
+        const ref = document.referrer ? new URL(document.referrer) : null;
+        const cameFromList = ref && /\/restaurants$/.test(ref.pathname);
+        if (cameFromList) {
+        back.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
+        return;
+        }
+    } catch {}
+
+    // Otherwise, if this page URL has ?from=..., rebuild the browse URL with those filters
+    const u = new URL(window.location.href);
+    const from = u.searchParams.get('from');
+    if (from) {
+        back.href = '/restaurants?' + from;
+    } else {
+        back.href = '/restaurants'; // fallback
+    }
+    })();
+
   const restaurantEl = document.getElementById('restaurant');
   const reviewsEl    = document.getElementById('reviews');
 
@@ -84,6 +115,47 @@
     `;
   }
 
+  // ⭐ Tiny star picker
+  function initStarPicker() {
+    const picker = document.getElementById('starPicker');
+    const input  = document.getElementById('ratingInput');
+    if (!picker || !input) return;
+
+    // create 5 clickable stars
+    picker.innerHTML = Array.from({ length: 5 }, (_, i) =>
+      `<span data-star="${i+1}" style="transition:color .12s ease;">☆</span>`
+    ).join('');
+
+    const stars = Array.from(picker.querySelectorAll('[data-star]'));
+    let current = Number(input.value) || 0;
+
+    const paint = (n) => {
+      stars.forEach((el, idx) => {
+        el.textContent = (idx < n) ? '★' : '☆';
+        el.style.color = (idx < n) ? '#facc15' : '#bbb'; // amber-400 for filled
+      });
+    };
+
+    picker.addEventListener('mousemove', (e) => {
+      const target = e.target.closest('[data-star]');
+      if (!target) return;
+      paint(Number(target.dataset.star));
+    });
+
+    picker.addEventListener('mouseleave', () => paint(current));
+
+    picker.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-star]');
+      if (!target) return;
+      current = Number(target.dataset.star);
+      input.value = String(current);
+      paint(current);
+    });
+
+    // default (no selection)
+    paint(current);
+  }
+
   function setupReviewForm() {
     const toggleBtn = document.getElementById('toggleReviewBtn');
     const form = document.getElementById('reviewForm');
@@ -94,23 +166,32 @@
       form.style.display = form.style.display === 'none' ? 'block' : 'none';
       msg.textContent = '';
       msg.style.color = '';
+      if (form.style.display === 'block') {
+        initStarPicker(); // ensure picker is ready when form opens
+      }
     });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!CURRENT_RESTAURANT?._id) return;
 
+      const ratingVal = Number(document.getElementById('ratingInput')?.value || 0);
+      if (!ratingVal) {
+        msg.style.color = '#b91c1c';
+        msg.textContent = 'Please select a rating.';
+        return;
+      }
+
       msg.style.color = '';
       msg.textContent = 'Submitting...';
       const fd = new FormData(form);
       const payload = {
-        rating: Number(fd.get('rating')),
+        rating: ratingVal, // ⭐ from the hidden input
         title: fd.get('title'),
         body: fd.get('body')
       };
 
       try {
-        // expects POST /api/reviews/:restaurantId
         const res = await fetch(`/api/reviews/${CURRENT_RESTAURANT._id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -118,7 +199,6 @@
           body: JSON.stringify(payload)
         });
 
-        // Best-effort parse
         const data = await res.json().catch(() => ({}));
 
         if (res.status === 409) {
@@ -137,6 +217,7 @@
         msg.textContent = 'Thanks for your review!';
         await load();     // refresh header stats + review list
         form.reset();
+        document.getElementById('ratingInput').value = ''; // clear rating
         form.style.display = 'none';
       } catch (err) {
         console.error(err);

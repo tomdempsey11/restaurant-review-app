@@ -1,17 +1,17 @@
 <%- include('partials/header', { title: 'Contact', user }) %>
 
-<main class="container" style="max-width:900px;margin:0 auto;padding:1.5rem">
-  <h1>Contact</h1>
+<section class="container container--narrow page-section">
+  <h1 class="mb-4 m-0">Contact</h1>
 
   <% if (typeof flash !== 'undefined') { %>
     <% (flash('success') || []).forEach(msg => { %>
-      <div class="alert alert-success" role="alert"><%= msg %></div>
+      <div class="alert alert--success mb-4" role="alert"><%= msg %></div>
     <% }) %>
   <% } %>
 
   <% if (errors && errors.length) { %>
-    <div class="alert alert-danger" role="alert">
-      <ul style="margin:0;padding-left:1rem">
+    <div class="alert alert--error mb-4" role="alert">
+      <ul class="list-unstyled m-0">
         <% errors.forEach(e => { %>
           <li><%= e.msg %></li>
         <% }) %>
@@ -19,29 +19,39 @@
     </div>
   <% } %>
 
-  <form action="/api/contact" method="POST" style="display:grid;gap:12px">
-    <div>
-      <label for="name">Name</label>
-      <input id="name" name="name" value="<%= values?.name || '' %>" required>
+  <form action="/api/contact" method="POST" class="card form-grid">
+    <div class="form-row form-row--2">
+      <label for="name">
+        Name <span class="required">*</span>
+        <input id="name" class="input" name="name" value="<%= values?.name || '' %>" required>
+      </label>
+
+      <label for="email">
+        Email <span class="required">*</span>
+        <input id="email" class="input" type="email" name="email" value="<%= values?.email || '' %>" required>
+      </label>
     </div>
 
-    <div>
-      <label for="email">Email</label>
-      <input id="email" type="email" name="email" value="<%= values?.email || '' %>" required>
+    <div class="form-row">
+      <label for="subject">
+        Subject <span class="required">*</span>
+        <input id="subject" class="input" name="subject" value="<%= values?.subject || '' %>" required maxlength="140">
+      </label>
     </div>
 
-    <div>
-      <label for="subject">Subject</label>
-      <input id="subject" name="subject" value="<%= values?.subject || '' %>" required>
+    <div class="form-row">
+      <label for="message">
+        Message <span class="required">*</span>
+        <textarea id="message" class="input" name="message" rows="6" required><%= values?.message || '' %></textarea>
+      </label>
+      <p class="help-text">Please include links or examples if relevant.</p>
     </div>
 
-    <div>
-      <label for="message">Message</label>
-      <textarea id="message" name="message" rows="6" required><%= values?.message || '' %></textarea>
+    <div class="row-between gap-2">
+      <button class="btn btn--primary" type="submit">Send</button>
+      <span id="contactMsg" class="muted"></span>
     </div>
-
-    <button class="btn btn-primary">Send</button>
   </form>
-</main>
+</section>
 
 <%- include('partials/footer') %>

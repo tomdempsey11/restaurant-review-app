@@ -1,36 +1,50 @@
 <%- include('../partials/header', { title, user }) %>
 
-<section class="container" style="max-width:980px;margin:32px auto;">
-  <h2 style="margin-bottom:16px;">Browse Restaurants</h2>
+<section class="container container--narrow page-section">
+  <h2 class="mb-4">Browse Restaurants</h2>
 
-  <form id="filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-    <input type="text" id="q" name="q" placeholder="Search name or cuisine" />
-    <select id="cuisine" name="cuisine">
-      <option value="">All cuisines</option>
-      <option>Italian</option>
-      <option>Mexican</option>
-      <option>Japanese</option>
-      <option>Chinese</option>
-      <option>American</option>
-      <option>Indian</option>
-      <option>Thai</option>
-      <option>Mediterranean</option>
+  <form id="filters" class="row mb-4">
+    <input class="input" type="text" id="q" name="q" placeholder="Search name or cuisine" value="<%= q || '' %>" />
+
+    <select id="cuisine" name="cuisine" class="input">
+      <option value="" <%= !cuisine ? 'selected' : '' %>>All cuisines</option>
+      <option value="Italian"       <%= cuisine==='Italian'       ? 'selected':'' %>>Italian</option>
+      <option value="Mexican"       <%= cuisine==='Mexican'       ? 'selected':'' %>>Mexican</option>
+      <option value="Japanese"      <%= cuisine==='Japanese'      ? 'selected':'' %>>Japanese</option>
+      <option value="Chinese"       <%= cuisine==='Chinese'       ? 'selected':'' %>>Chinese</option>
+      <option value="American"      <%= cuisine==='American'      ? 'selected':'' %>>American</option>
+      <option value="Indian"        <%= cuisine==='Indian'        ? 'selected':'' %>>Indian</option>
+      <option value="Thai"          <%= cuisine==='Thai'          ? 'selected':'' %>>Thai</option>
+      <option value="Mediterranean" <%= cuisine==='Mediterranean' ? 'selected':'' %>>Mediterranean</option>
     </select>
-    <select id="price" name="price">
+
+    <select id="price" name="price" class="input">
       <option value="">All prices</option>
       <option value="$">$</option>
       <option value="$$">$$</option>
       <option value="$$$">$$$</option>
       <option value="$$$$">$$$$</option>
     </select>
-    <button type="submit">Apply</button>
-    <button type="button" id="clearBtn">Clear</button>
+
+    <select id="sort" name="sort" class="input">
+      <option value="new">Newest</option>
+      <option value="ratingDesc">Top rated</option>
+      <option value="nameAsc">Name A–Z</option>
+      <option value="nameDesc">Name Z–A</option>
+      <option value="priceAsc">Price ↑</option>
+      <option value="priceDesc">Price ↓</option>
+      <option value="old">Oldest</option>
+    </select>
+
+    <button type="submit" class="btn">Apply</button>
+    <button type="button" id="clearBtn" class="btn btn--ghost">Clear</button>
   </form>
 
   <div id="results"></div>
 
-  <div id="pager" style="display:flex; gap:8px; margin-top:16px;"></div>
+  <div id="pager" class="pager mt-4"></div>
 </section>
+
 
 <script>
   const resultsEl = document.getElementById('results');
@@ -39,18 +53,28 @@
   const qEl       = document.getElementById('q');
   const cuisineEl = document.getElementById('cuisine');
   const priceEl   = document.getElementById('price');
+  const sortEl    = document.getElementById('sort');
   const clearBtn  = document.getElementById('clearBtn');
+
+  // NEW: also read current URL on load so controls always match URL
+  (function syncControlsFromUrl(){
+    const params = new URLSearchParams(location.search);
+    if (params.has('q'))       qEl.value = params.get('q');
+    if (params.has('cuisine')) cuisineEl.value = params.get('cuisine');
+    if (params.has('price'))   priceEl.value = params.get('price');
+    if (params.has('sort'))    sortEl.value = params.get('sort') || 'new';
+  })();
 
   function getParams(page=1) {
     const p = new URLSearchParams();
     if (qEl.value.trim())      p.set('q', qEl.value.trim());
     if (cuisineEl.value)       p.set('cuisine', cuisineEl.value);
     if (priceEl.value)         p.set('price', priceEl.value);
+    if (sortEl.value)          p.set('sort', sortEl.value);
     p.set('page', page);
     return p.toString();
   }
 
-  // Renders "★ 4.5 (12 reviews)" or "No reviews yet"
   function ratingBadge(r) {
     const hasNumber = typeof r.avgRating === 'number' && !Number.isNaN(r.avgRating);
     if (hasNumber) {
@@ -60,7 +84,7 @@
     return 'No reviews yet';
   }
 
-  async function load(page=1) {
+  async function load(page=Number(<%- Number(page || 1) %>)) {
     resultsEl.innerHTML = 'Loading…';
     pagerEl.innerHTML = '';
     try {
@@ -68,16 +92,29 @@
       const res = await fetch('/api/restaurants?' + qs, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load restaurants');
       const data = await res.json();
-      const items = data.items || data.restaurants || []; // be flexible with API shape
+      const items = data.items || data.restaurants || [];
 
       if (!items.length) {
-        resultsEl.innerHTML = '<p>No restaurants available yet.</p>';
+        // NEW: nicer empty state with quick “clear filters” action
+        resultsEl.innerHTML = `
+          <div class="muted">
+            <p>No restaurants match your filters.</p>
+            <p><button id="resetFilters" type="button">Clear filters</button></p>
+          </div>`;
+        const resetBtn = document.getElementById('resetFilters');
+        if (resetBtn) resetBtn.addEventListener('click', () => {
+          qEl.value = ''; cuisineEl.value = ''; priceEl.value = ''; sortEl.value = 'new';
+          load(1);
+        });
       } else {
         resultsEl.innerHTML = `
           <ul style="list-style:none;padding:0;margin:0;">
             ${items.map(r => `
               <li style="margin:12px 0; padding:12px; border:1px solid #eee; border-radius:8px;">
-                <a href="/restaurants/${r.slug}" style="font-weight:600; text-decoration:none;">
+                <a
+                  href="/restaurants/${r.slug}${location.search ? (`?from=${encodeURIComponent(location.search.slice(1))}`) : ''}"
+                  style="font-weight:600; text-decoration:none;"
+                >
                   ${escapeHtml(r.name)}
                 </a>
                 <div class="muted" style="margin-top:4px;">
@@ -95,6 +132,7 @@
 
       const pageNum  = data.page || 1;
       const pagesNum = data.pages || 1;
+
       if (pagesNum > 1) {
         pagerEl.innerHTML = `
           <button ${pageNum<=1?'disabled':''} data-page="${pageNum-1}">Prev</button>
@@ -105,6 +143,11 @@
           btn.addEventListener('click', ()=> load(parseInt(btn.dataset.page, 10)));
         });
       }
+
+      // Keep URL in sync (handy for back button / sharing)
+      const newUrl = `${location.pathname}?${qs}`;
+      if (newUrl !== location.href) history.replaceState(null, '', newUrl);
+
     } catch (err) {
       console.error(err);
       resultsEl.innerHTML = '<p style="color:#b91c1c;">Error loading restaurants.</p>';
@@ -119,14 +162,13 @@
     qEl.value = '';
     cuisineEl.value = '';
     priceEl.value = '';
+    sortEl.value = 'new';
     load(1);
   });
 
-  // simple HTML escaper
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  // initial load
-  load(1);
+  load(Number(<%- Number(page || 1) %>));
 </script>
 
 <%- include('../partials/footer') %>

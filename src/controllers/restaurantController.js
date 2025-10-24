@@ -5,38 +5,94 @@ import { Review } from "../models/Review.js";
 import { restaurantSchema } from "../utils/validators.js";
 
 export const listRestaurants = async (req, res) => {
-  const { q, cuisine, price, page = 1, limit = 9 } = req.query;
+  const { q, cuisine, price, page = 1, limit = 9, sort = "new" } = req.query;
+
+  // Filter
   const filter = {};
   if (q) filter.name = { $regex: q, $options: "i" };
   if (cuisine) filter.cuisine = cuisine;
   if (price) filter.priceRange = price;
 
-  const pageNum = Number(page);
-  const lim = Number(limit);
+  // Pagination
+  const pageNum = Math.max(1, Number(page) || 1);
+  const lim = Math.min(50, Math.max(1, Number(limit) || 9));
   const skip = (pageNum - 1) * lim;
 
+  // Build $sort (and whether we need priceRank)
+  let sortStage = {};
+  let needsPriceRank = false;
+  switch (sort) {
+    case "new":        sortStage = { createdAt: -1 }; break;
+    case "old":        sortStage = { createdAt: 1 }; break;
+    case "nameAsc":    sortStage = { name: 1, createdAt: -1 }; break;
+    case "nameDesc":   sortStage = { name: -1, createdAt: -1 }; break;
+    case "ratingDesc": sortStage = { avgRating: -1, reviewCount: -1, createdAt: -1 }; break;
+    case "ratingAsc":  sortStage = { avgRating: 1,  reviewCount: 1,  createdAt: -1 }; break;
+    case "priceAsc":   needsPriceRank = true; sortStage = { priceRank: 1,  createdAt: -1 }; break;
+    case "priceDesc":  needsPriceRank = true; sortStage = { priceRank: -1, createdAt: -1 }; break;
+    default:           sortStage = { createdAt: -1 };
+  }
+
+  // Pipeline: match → (priceRank) → lookup stats → addFields → project → sort → page
+  const pipeline = [
+    { $match: filter },
+    ...(needsPriceRank ? [{ $addFields: { priceRank: { $strLenCP: "$priceRange" } } }] : []),
+
+    // 👇 live stats so list is always accurate and rating sorts work
+    {
+      $lookup: {
+        from: "reviews",
+        let: { rid: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$restaurantId", "$$rid"] } } },
+          { $group: { _id: null, count: { $sum: 1 }, avg: { $avg: "$rating" } } }
+        ],
+        as: "stats"
+      }
+    },
+    {
+      $addFields: {
+        reviewCount: { $ifNull: [ { $arrayElemAt: ["$stats.count", 0] }, 0 ] },
+        avgRating: {
+          $let: {
+            vars: { a: { $arrayElemAt: ["$stats.avg", 0] } },
+            in: { $cond: [{ $ne: ["$$a", null] }, { $round: ["$$a", 1] }, null] }
+          }
+        }
+      }
+    },
+    { $project: { stats: 0 } },
+
+    { $sort: sortStage },
+    { $skip: skip },
+    { $limit: lim },
+    ...(needsPriceRank ? [{ $project: { priceRank: 0 } }] : []),
+  ];
+
+  console.log("🧭 listRestaurants sort:", sort, " sortStage:", sortStage, " needsPriceRank:", needsPriceRank);
+
   const [items, total] = await Promise.all([
-    Restaurant.find(filter).sort({ createdAt: -1 }).skip(skip).limit(lim).lean(),
+    Restaurant.aggregate(pipeline).collation({ locale: "en", strength: 1 }),
     Restaurant.countDocuments(filter)
   ]);
 
   res.json({ items, total, page: pageNum, pages: Math.ceil(total / lim) });
 };
 
+
+
+
 export const getBySlug = async (req, res) => {
   const { slug } = req.params;
 
-  // 1) Find the restaurant
   const doc = await Restaurant.findOne({ slug }).lean();
   if (!doc) return res.status(404).json({ error: "Restaurant not found" });
 
-  // 2) Fetch reviews (newest first) + ✅ populate reviewer (name/email)
   const reviews = await Review.find({ restaurantId: doc._id })
-    .populate("userId", "name email")   // ← NEW: include reviewer identity
+    .populate("userId", "name email")
     .sort({ createdAt: -1 })
     .lean();
 
-  // 3) Compute stats (avg + count) from the reviews collection
   const stats = await Review.aggregate([
     { $match: { restaurantId: new mongoose.Types.ObjectId(doc._id) } },
     { $group: { _id: "$restaurantId", count: { $sum: 1 }, avg: { $avg: "$rating" } } }
@@ -45,7 +101,6 @@ export const getBySlug = async (req, res) => {
   const reviewCount = stats[0]?.count ?? 0;
   const avgRating = stats.length ? Math.round(stats[0].avg * 10) / 10 : null;
 
-  // 4) Return JSON with everything the detail page/API needs
   res.json({
     restaurant: { ...doc, avgRating, reviewCount },
     reviews

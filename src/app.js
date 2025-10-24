@@ -82,6 +82,13 @@ app.use("/", userPagesRouter); // exposes /me, etc.
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminRouter);
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
 
+// No-cache for API list to ensure fresh sorts/filters
+app.use("/api/restaurants", (req, res, next) => {
+  res.set("Cache-Control", "no-store"); // disable caching for this endpoint
+  next();
+});
+
+
 // API routers
 app.use("/", indexRouter);
 app.use("/auth", authRouter);

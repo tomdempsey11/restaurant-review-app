@@ -10,10 +10,13 @@
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "seed": "node src/seed.js",
     "seed:user": "node src/seedUser.js",
-    "seed:admin": "node scripts/seedAdmin.js"
+    "seed:admin": "node scripts/seedAdmin.js",
+    "build-css": "sass public/scss:public/css --no-source-map",
+    "watch-css": "sass --watch public/scss:public/css --no-source-map"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -33,6 +36,7 @@
     "cross-env": "^7.0.3",
     "jest": "^29.7.0",
     "nodemon": "^3.1.4",
+    "sass": "^1.93.2",
     "supertest": "^7.0.0"
   }
 }

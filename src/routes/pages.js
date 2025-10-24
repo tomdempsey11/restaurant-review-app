@@ -4,14 +4,24 @@ import { Router } from "express";
 const router = Router();
 
 // Public list page (client will call /api/restaurants)
+// Pass current query params so the EJS can render filters & pager state
 router.get("/", (req, res) => {
+  const { q = "", cuisine = "", price = "", sort = "new", page = 1, limit = 9 } = req.query;
+
   res.render("restaurants/list", {
     title: "Browse Restaurants",
     user: req.user,
+    // expose query values to EJS for pre-filling controls and building pager links
+    q,
+    cuisine,
+    price,
+    sort,
+    page: Number(page) || 1,
+    limit: Number(limit) || 9,
   });
 });
 
-// ✅ Public detail page (now uses detail.ejs)
+// Public detail page
 router.get("/:slug", (req, res) => {
   res.render("restaurants/detail", {
     title: "Restaurant",

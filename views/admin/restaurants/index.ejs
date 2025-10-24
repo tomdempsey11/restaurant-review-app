@@ -1,40 +1,71 @@
-<%- include('../../partials/header', { title: 'Admin • Restaurants', user }) %>
+<%- include('../../partials/header', { title: 'Admin • Restaurants' }) %>
 
-<h2>Admin: Restaurants</h2>
+<section class="container page-section">
+  <% const _q = (typeof q !== 'undefined' && q) ? q : ''; %>
+  <% const _page = (typeof page !== 'undefined' && page) ? Number(page) : 1; %>
+  <% const _totalPages = (typeof totalPages !== 'undefined' && totalPages) ? Number(totalPages) : 1; %>
+  <% const _restaurants = Array.isArray(restaurants) ? restaurants : []; %>
 
-<div style="margin: 12px 0;">
-  <a class="btn btn-primary" href="/admin/restaurants/new">+ New Restaurant</a>
-</div>
+  <div class="row-between mb-4">
+    <h2 class="m-0">Admin: Restaurants</h2>
 
-<table class="table" style="width:100%; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th style="text-align:left;">Name</th>
-      <th style="text-align:left;">Cuisine</th>
-      <th style="text-align:left;">Address</th>
-      <th style="text-align:left;">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% if (restaurants && restaurants.length) { %>
-      <% restaurants.forEach(r => { %>
+    <div class="admin-bar">
+      <form class="admin-bar__search" method="GET" action="/admin/restaurants">
+        <input class="input" type="text" name="q" value="<%= _q %>" placeholder="Search name, cuisine, address">
+        <button class="btn btn--primary" type="submit">Search</button>
+        <% if (_q) { %>
+          <a class="btn btn--ghost" href="/admin/restaurants">Clear</a>
+        <% } %>
+      </form>
+
+      <a class="btn btn--primary" href="/admin/restaurants/new">+ New Restaurant</a>
+    </div>
+  </div>
+
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
         <tr>
-          <td><%= r.name %></td>
-          <td><%= r.cuisine || '-' %></td>
-          <td><%= r.address || '-' %></td>
-          <td>
-            <a class="btn btn-sm" href="/restaurants/<%= r.slug %>" target="_blank">View</a>
-            <a class="btn btn-sm btn-warning" href="/admin/restaurants/<%= r._id %>/edit">Edit</a>
-            <form action="/admin/restaurants/<%= r._id %>/delete" method="POST" style="display:inline-block" onsubmit="return confirm('Delete this restaurant?');">
-              <button class="btn btn-sm btn-danger">Delete</button>
-            </form>
-          </td>
+          <th>Name</th>
+          <th>Cuisine</th>
+          <th>Address</th>
+          <th class="text-right">Actions</th>
         </tr>
-      <% }) %>
-    <% } else { %>
-      <tr><td colspan="4">No restaurants yet.</td></tr>
-    <% } %>
-  </tbody>
-</table>
+      </thead>
+      <tbody>
+        <% if (_restaurants.length) { %>
+          <% _restaurants.forEach(r => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td><%= r.cuisine || '-' %></td>
+              <td><%= r.address || '-' %></td>
+              <td class="text-right nowrap">
+                <div class="btn-group">
+                  <a class="btn btn--ghost btn--sm" href="/restaurants/<%= r.slug %>" target="_blank" rel="noopener">View</a>
+                  <a class="btn btn--primary btn--sm" href="/admin/restaurants/<%= r._id %>/edit">Edit</a>
+                  <form class="inline-form" action="/admin/restaurants/<%= r._id %>/delete" method="POST" onsubmit="return confirm('Delete this restaurant?');">
+                    <button class="btn btn--danger btn--sm" type="submit">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="4" class="text-muted">No restaurants yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (_totalPages > 1) { %>
+    <nav class="pager pager--center mt-4">
+      <% for (let i = 1; i <= _totalPages; i++) { %>
+        <a href="/admin/restaurants?<%= _q ? ('q=' + encodeURIComponent(_q) + '&') : '' %>page=<%= i %>"
+           class="page-link <%= (i === _page) ? 'is-active' : '' %>"><%= i %></a>
+      <% } %>
+    </nav>
+  <% } %>
+</section>
 
 <%- include('../../partials/footer') %>

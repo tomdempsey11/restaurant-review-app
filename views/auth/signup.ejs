@@ -1,22 +1,50 @@
-<%- include('../partials/header', { title, user: null }) %>
+<%- include('../partials/header', { title: 'Sign Up' }) %>
 
-<h2>Sign Up</h2>
-<% if (typeof error !== 'undefined') { %>
-  <div class="error"><%= error %></div>
-<% } %>
-<form method="POST" action="/auth/signup" class="form-stack">
-  <label>Name</label>
-  <input type="text" name="name" required />
-  <label>Email</label>
-  <input type="email" name="email" required />
-  <label>Password</label>
-  <input type="password" name="password" required />
-  <label>Confirm Password</label>
-  <input type="password" name="confirmPassword" required />
-  <label class="checkbox">
-    <input type="checkbox" required /> Accept Terms
-  </label>
-  <button type="submit">Create Account</button>
-</form>
+<section class="container container--narrow page-section">
+  <h2 class="m-0 mb-4">Create your account</h2>
+
+  <% const _errors = (typeof errors !== 'undefined' && Array.isArray(errors)) ? errors : []; %>
+  <% const _error  = (typeof error  !== 'undefined' && error) ? error : null; %>
+
+  <% if (_errors.length) { %>
+    <div class="alert alert--error mb-4" role="alert">
+      <ul class="list-unstyled m-0">
+        <% _errors.forEach(e => { %><li><%= e.msg || e %></li><% }) %>
+      </ul>
+    </div>
+  <% } else if (_error) { %>
+    <div class="alert alert--error mb-4" role="alert"><%= _error %></div>
+  <% } %>
+
+  <form method="POST" action="/auth/signup" class="card form-grid">
+    <div class="form-row form-row--2">
+      <label>Name <span class="required">*</span>
+        <input class="input" type="text" name="name" value="<%= (typeof values !== 'undefined' && values && values.name) ? values.name : '' %>" required>
+      </label>
+      <label>Email <span class="required">*</span>
+        <input class="input" type="email" name="email" value="<%= (typeof values !== 'undefined' && values && values.email) ? values.email : '' %>" required>
+      </label>
+    </div>
+
+    <div class="form-row form-row--2">
+      <label>Password <span class="required">*</span>
+        <input class="input" type="password" name="password" required minlength="6">
+      </label>
+      <label>Confirm Password <span class="required">*</span>
+        <input class="input" type="password" name="confirmPassword" required minlength="6">
+      </label>
+    </div>
+
+    <label class="form-row">
+      <span>Accept Terms <span class="required">*</span></span>
+      <span><input type="checkbox" name="accept" required></span>
+    </label>
+
+    <div class="row-between gap-2">
+      <button class="btn btn--primary" type="submit">Create Account</button>
+      <a class="back-link" href="/auth/login">Already have an account? Log in</a>
+    </div>
+  </form>
+</section>
 
 <%- include('../partials/footer') %>

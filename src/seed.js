@@ -13,7 +13,10 @@ async function recalcAverage(restaurantId) {
     { $group: { _id: "$restaurantId", avg: { $avg: "$rating" }, count: { $sum: 1 } } }
   ]);
   const avg = agg[0]?.avg || 0;
-  await Restaurant.findByIdAndUpdate(restaurantId, { avgRating: Math.round(avg * 10) / 10 });
+  await Restaurant.findByIdAndUpdate(restaurantId, {
+    avgRating: Math.round(avg * 10) / 10,
+    reviewCount: agg[0]?.count || 0
+  });
 }
 
 async function main() {
@@ -40,114 +43,90 @@ async function main() {
     })()
   ]);
 
-  // Seed restaurants (don’t set avgRating manually; reviews will drive it)
-  const restaurants = await Restaurant.insertMany([
-    {
-      name: "Pasta Palace",
-      slug: "pasta-palace",
-      cuisine: "Italian",
-      priceRange: "$$",
-      address: "123 Main St, Irvine, CA",
-      openHours: "Mon–Sun 11:00–21:00",
-      photos: []
-    },
-    {
-      name: "Sushi Garden",
-      slug: "sushi-garden",
-      cuisine: "Japanese",
-      priceRange: "$$$",
-      address: "456 Oak Ave, Irvine, CA",
-      openHours: "Tue–Sun 12:00–22:00",
-      photos: []
-    },
-    {
-      name: "Taco Amigos",
-      slug: "taco-amigos",
-      cuisine: "Mexican",
-      priceRange: "$",
-      address: "789 Lake Rd, Irvine, CA",
-      openHours: "Daily 10:00–20:00",
-      photos: []
-    },
-    {
-      name: "Spice Route",
-      slug: "spice-route",
-      cuisine: "Indian",
-      priceRange: "$$",
-      address: "12 Curry Ln, Irvine, CA",
-      openHours: "Mon–Sat 11:30–21:30",
-      photos: []
-    },
-    {
-      name: "Green Bowl",
-      slug: "green-bowl",
-      cuisine: "Vegetarian",
-      priceRange: "$$",
-      address: "98 Garden St, Irvine, CA",
-      openHours: "Daily 10:00–19:00",
-      photos: []
-    },
-    {
-      name: "Burger Barn",
-      slug: "burger-barn",
-      cuisine: "American",
-      priceRange: "$",
-      address: "77 Ranch Rd, Irvine, CA",
-      openHours: "Mon–Sun 11:00–23:00",
-      photos: []
-    }
-  ]);
+  // Define possible attributes
+  const cuisines = ["Italian", "Japanese", "Mexican", "Chinese", "American", "Indian", "Thai", "Mediterranean", "Vegetarian"];
+  const priceRanges = ["$", "$$", "$$$", "$$$$"];
+  const cityNames = ["Irvine", "Costa Mesa", "Newport Beach", "Tustin", "Santa Ana", "Anaheim", "Orange", "Garden Grove"];
 
-  // Helper: add a few reviews per restaurant
-  async function seedReviewsFor(rest, ratings) {
-    const payloads = ratings.map(({ by, rating, title, body }) => ({
-      userId: by === "demo" ? demo._id : admin._id,
-      restaurantId: rest._id,
-      rating,
-      title,
-      body,
-      photos: []
-    }));
-    await Review.insertMany(payloads);
-    await recalcAverage(rest._id);
+  // Helper: random pick
+  const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  const restaurants = [];
+
+  for (let i = 1; i <= 50; i++) {
+    const name = `${rand(["The", "Cafe", "House of", "Bistro", "Grill", "Corner", "Garden", "Kitchen"])} ${rand(["Sakura", "Taco", "Pasta", "Spice", "Burger", "Curry", "Dragon", "Olive", "Zen", "Lime"])} ${i}`;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const cuisine = rand(cuisines);
+    const priceRange = rand(priceRanges);
+    const address = `${Math.floor(Math.random() * 900) + 100} ${rand(["Main St", "Broadway", "Sunset Blvd", "Ocean Ave", "Maple Dr"])} ${rand(cityNames)}, CA`;
+    const openHours = "Daily 10:00–22:00";
+    const avgRating = +(3 + Math.random() * 2).toFixed(1);
+    const reviewCount = Math.floor(Math.random() * 40);
+
+    // 🕒 NEW: stagger creation dates to test newest/oldest sorting
+    const createdAt = new Date(Date.now() - i * 36 * 60 * 60 * 1000); // each ~1.5 days older
+    const updatedAt = createdAt;
+
+    restaurants.push({
+      name,
+      slug,
+      cuisine,
+      priceRange,
+      address,
+      openHours,
+      avgRating,
+      reviewCount,
+      createdAt,
+      updatedAt
+    });
   }
 
-  await seedReviewsFor(restaurants[0], [
-    { by: "demo", rating: 5, title: "Amazing pasta", body: "Fresh sauce and perfect al dente." },
-    { by: "admin", rating: 4, title: "Tasty!", body: "Good value and cozy vibe." }
-  ]);
 
-  await seedReviewsFor(restaurants[1], [
-    { by: "demo", rating: 5, title: "Super fresh fish", body: "Nigiri was fantastic." },
-    { by: "admin", rating: 4, title: "Great rolls", body: "A bit pricey but worth it." }
-  ]);
+  await Restaurant.insertMany(restaurants);
+  console.log(`🍽️ Seeded ${restaurants.length} restaurants`);
 
-  await seedReviewsFor(restaurants[2], [
-    { by: "demo", rating: 4, title: "Great tacos", body: "Carnitas were crispy and flavorful." }
-  ]);
+  // Optional: create random reviews
+  const sampleTitles = ["Amazing!", "Good overall", "Could be better", "Loved it!", "Will come again", "Average experience"];
+  const sampleBodies = [
+    "Food was delicious and service was great.",
+    "Reasonable prices and cozy atmosphere.",
+    "Too crowded but food quality was fine.",
+    "Outstanding flavor combinations!",
+    "Friendly staff but long wait time."
+  ];
 
-  // Leave a couple with fewer or no reviews so you can see empty states
-  await seedReviewsFor(restaurants[3], [
-    { by: "demo", rating: 5, title: "Flavor bomb", body: "Butter chicken was incredible." }
-  ]);
+  const allRestaurants = await Restaurant.find();
+  const reviews = [];
 
-  // restaurants[4] (Green Bowl) → no reviews
-  // restaurants[5] (Burger Barn) → one mixed review
-  await seedReviewsFor(restaurants[5], [
-    { by: "admin", rating: 3, title: "Decent burger", body: "Fries were soggy, burger was fine." }
-  ]);
+  for (const rest of allRestaurants) {
+    const num = Math.floor(Math.random() * 4); // 0–3 reviews per restaurant
+    for (let i = 0; i < num; i++) {
+      const by = Math.random() > 0.5 ? demo._id : admin._id;
+      const rating = Math.floor(Math.random() * 3) + 3; // 3–5 stars
+      reviews.push({
+        userId: by,
+        restaurantId: rest._id,
+        rating,
+        title: rand(sampleTitles),
+        body: rand(sampleBodies)
+      });
+    }
+  }
 
-  console.log("🌱 Seeded users, restaurants, and reviews.");
-  console.log("👤 Demo login → email: demo@example.com, pass: password123");
-  console.log("🛠️ Admin login → email: admin@example.com, pass: admin12345");
+  if (reviews.length) await Review.insertMany(reviews);
+
+  // Update averages
+  for (const rest of allRestaurants) await recalcAverage(rest._id);
+
+  console.log("💬 Seeded", reviews.length, "reviews.");
+  console.log("👤 Demo login → demo@example.com / password123");
+  console.log("🛠️ Admin login → admin@example.com / admin12345");
+
+  await mongoose.disconnect();
+  console.log("✅ Done");
 }
 
-main()
-  .catch(err => {
-    console.error("❌ Seed error:", err);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await mongoose.connection.close();
-    console.log("🔚 Done");
-  });
+main().catch(err => {
+  console.error("❌ Seed error:", err);
+  process.exit(1);
+});
