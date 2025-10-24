@@ -1,0 +1,162 @@
+<%- include('../partials/header', { title: title || 'Restaurant', user }) %>
+
+<section class="container" style="max-width:980px;margin:32px auto;">
+  <a href="/restaurants" style="text-decoration:none;">← Back to Browse</a>
+
+  <div id="restaurant"></div>
+
+  <hr style="margin:24px 0;">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px;">
+    <h3 style="margin:0;">Reviews</h3>
+
+    <% if (!user) { %>
+      <a class="btn" href="/auth/login?next=<%= encodeURIComponent(`/restaurants/${slug}`) %>">
+        Log in to write a review
+      </a>
+    <% } else { %>
+      <button id="toggleReviewBtn" class="btn btn-primary" type="button">Write a Review</button>
+    <% } %>
+  </div>
+
+  <% if (user) { %>
+  <form id="reviewForm" style="display:none;border:1px solid #eee;border-radius:8px;padding:12px;margin:8px 0;">
+    <div style="display:grid;gap:10px;">
+      <label>
+        Rating (1–5)
+        <input type="number" name="rating" min="1" max="5" required>
+      </label>
+      <label>
+        Title
+        <input type="text" name="title" maxlength="120" required>
+      </label>
+      <label>
+        Body
+        <textarea name="body" rows="4" required></textarea>
+      </label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-primary" type="submit">Submit Review</button>
+        <span id="reviewMsg" class="muted"></span>
+      </div>
+    </div>
+  </form>
+  <% } %>
+
+  <div id="reviews"></div>
+</section>
+
+<script>
+  const restaurantEl = document.getElementById('restaurant');
+  const reviewsEl    = document.getElementById('reviews');
+
+  // helpers
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function stars(n){
+    if (typeof n !== 'number' || isNaN(n)) return 'No reviews yet';
+    const filled = '★'.repeat(Math.round(n));
+    const empty  = '☆'.repeat(5 - Math.round(n));
+    return `${filled}${empty} (${n})`;
+  }
+  function fmtDate(iso){ try { return new Date(iso).toLocaleDateString(); } catch { return ''; } }
+
+  let CURRENT_RESTAURANT = null;
+
+  function renderReviews(reviews) {
+    if (!reviews.length) {
+      reviewsEl.innerHTML = `<p class="muted">No reviews yet. Be the first to review!</p>`;
+      return;
+    }
+    reviewsEl.innerHTML = `
+      <ul style="list-style:none;padding:0;margin:0;">
+        ${reviews.map(rv => `
+          <li style="border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;">
+              <strong>${esc(rv.title || '')}</strong>
+              <span>${stars(rv.rating)}</span>
+            </div>
+            <p style="margin:.5rem 0;white-space:pre-wrap">${esc(rv.body || '')}</p>
+            <div class="muted" style="font-size:.9rem;">${fmtDate(rv.createdAt)}</div>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+  }
+
+  function setupReviewForm() {
+    const toggleBtn = document.getElementById('toggleReviewBtn');
+    const form = document.getElementById('reviewForm');
+    if (!toggleBtn || !form) return; // not logged in
+
+    const msg = document.getElementById('reviewMsg');
+    toggleBtn.addEventListener('click', () => {
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      msg.textContent = '';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!CURRENT_RESTAURANT?._id) return;
+
+      msg.textContent = 'Submitting...';
+      const fd = new FormData(form);
+      const payload = {
+        rating: Number(fd.get('rating')),
+        title: fd.get('title'),
+        body: fd.get('body')
+      };
+
+      try {
+        // expects POST /api/reviews/:restaurantId (ensure this exists in your routes)
+        const res = await fetch(`/api/reviews/${CURRENT_RESTAURANT._id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Failed to submit review');
+        msg.textContent = 'Thanks for your review!';
+        await load();            // refresh header stats + review list
+        form.reset();
+        form.style.display = 'none';
+      } catch (err) {
+        console.error(err);
+        msg.textContent = 'Error: could not save review.';
+      }
+    });
+  }
+
+  async function load() {
+    try {
+      const slug = window.location.pathname.split('/').pop();
+      const res  = await fetch(`/api/restaurants/${slug}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load restaurant');
+      const data = await res.json();
+
+      const r = data.restaurant || {};
+      CURRENT_RESTAURANT = r;
+
+      restaurantEl.innerHTML = `
+        <header style="margin:8px 0 16px;">
+          <h1 style="margin:0 0 6px;">${esc(r.name || '')}</h1>
+          <div class="muted">
+            ${typeof r.avgRating === 'number' ? `★ ${r.avgRating} (${r.reviewCount || 0} review${(r.reviewCount||0)===1?'':'s'})` : 'No reviews yet'}
+          </div>
+          <div style="margin-top:8px;">
+            ${esc(r.cuisine || '')} ${r.priceRange ? '• ' + esc(r.priceRange) : ''}<br>
+            ${esc(r.address || '')}
+          </div>
+        </header>
+      `;
+
+      renderReviews(data.reviews || []);
+      setupReviewForm();
+    } catch (err) {
+      console.error(err);
+      restaurantEl.innerHTML = `<p style="color:#b91c1c;">Error loading restaurant.</p>`;
+    }
+  }
+
+  load();
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,3 +1,5 @@
+// src/controllers/restaurantController.js
+import mongoose from "mongoose";
 import { Restaurant } from "../models/Restaurant.js";
 import { Review } from "../models/Review.js";
 import { restaurantSchema } from "../utils/validators.js";
@@ -9,20 +11,44 @@ export const listRestaurants = async (req, res) => {
   if (cuisine) filter.cuisine = cuisine;
   if (price) filter.priceRange = price;
 
-  const skip = (Number(page) - 1) * Number(limit);
+  const pageNum = Number(page);
+  const lim = Number(limit);
+  const skip = (pageNum - 1) * lim;
+
   const [items, total] = await Promise.all([
-    Restaurant.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    Restaurant.find(filter).sort({ createdAt: -1 }).skip(skip).limit(lim).lean(),
     Restaurant.countDocuments(filter)
   ]);
-  res.json({ items, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+
+  res.json({ items, total, page: pageNum, pages: Math.ceil(total / lim) });
 };
 
 export const getBySlug = async (req, res) => {
   const { slug } = req.params;
-  const doc = await Restaurant.findOne({ slug });
+
+  // 1) Find the restaurant
+  const doc = await Restaurant.findOne({ slug }).lean();
   if (!doc) return res.status(404).json({ error: "Restaurant not found" });
-  const reviews = await Review.find({ restaurantId: doc._id }).sort({ createdAt: -1 });
-  res.json({ restaurant: doc, reviews });
+
+  // 2) Fetch reviews (newest first)
+  const reviews = await Review.find({ restaurantId: doc._id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // 3) Compute stats (avg + count) from the reviews collection
+  const stats = await Review.aggregate([
+    { $match: { restaurantId: new mongoose.Types.ObjectId(doc._id) } },
+    { $group: { _id: "$restaurantId", count: { $sum: 1 }, avg: { $avg: "$rating" } } }
+  ]);
+
+  const reviewCount = stats[0]?.count ?? 0;
+  const avgRating = stats.length ? Math.round(stats[0].avg * 10) / 10 : null;
+
+  // 4) Return JSON with everything the detail page/API needs
+  res.json({
+    restaurant: { ...doc, avgRating, reviewCount },
+    reviews
+  });
 };
 
 export const createRestaurant = async (req, res) => {
@@ -38,14 +64,14 @@ export const updateRestaurant = async (req, res) => {
   const { id } = req.params;
   const { value, error } = restaurantSchema.validate(req.body, { abortEarly: false });
   if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
-  const updated = await Restaurant.findByIdAndUpdate(id, value, { new: true });
+  const updated = await Restaurant.findByIdAndUpdate(id, value, { new: true }).lean();
   if (!updated) return res.status(404).json({ error: "Not found" });
   res.json(updated);
 };
 
 export const deleteRestaurant = async (req, res) => {
   const { id } = req.params;
-  const deleted = await Restaurant.findByIdAndDelete(id);
+  const deleted = await Restaurant.findByIdAndDelete(id).lean();
   if (!deleted) return res.status(404).json({ error: "Not found" });
   res.json({ ok: true });
 };

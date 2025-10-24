@@ -7,14 +7,16 @@ const router = Router();
 router.get("/", (req, res) => {
   res.render("restaurants/list", {
     title: "Browse Restaurants",
+    user: req.user,
   });
 });
 
-// Public details page (client will call /api/restaurants/:slug)
+// ✅ Public detail page (now uses detail.ejs)
 router.get("/:slug", (req, res) => {
-  res.render("restaurants/show", {
+  res.render("restaurants/detail", {
     title: "Restaurant",
     slug: req.params.slug,
+    user: req.user,
   });
 });
 
@@ -27,6 +29,7 @@ router.get("/:slug/reviews/new", (req, res) => {
   res.render("restaurants/write-review", {
     title: "Write a Review",
     slug: req.params.slug,
+    user: req.user,
   });
 });
 

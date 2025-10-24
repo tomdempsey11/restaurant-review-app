@@ -23,7 +23,7 @@ import adminRouter from "./routes/admin.js";
 import ensureLoggedIn from "./middleware/ensureLoggedIn.js";
 import ensureAdmin from "./middleware/ensureAdmin.js";
 
-// ✅ NEW: Admin Contact routes (list/search contact messages)
+// Admin Contact routes
 import adminContactRouter from "./routes/adminContact.js";
 
 // Contact (ESM)
@@ -80,7 +80,6 @@ app.use("/", userPagesRouter); // exposes /me, etc.
 
 // Admin (guarded)
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminRouter);
-// ✅ NEW: Mount admin contact routes under the same guards
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
 
 // API routers
