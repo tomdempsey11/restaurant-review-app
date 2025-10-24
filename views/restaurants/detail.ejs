@@ -75,7 +75,9 @@
               <span>${stars(rv.rating)}</span>
             </div>
             <p style="margin:.5rem 0;white-space:pre-wrap">${esc(rv.body || '')}</p>
-            <div class="muted" style="font-size:.9rem;">${fmtDate(rv.createdAt)}</div>
+            <div class="muted" style="font-size:.9rem;">
+              ${esc(rv.userId?.name || rv.userId?.email || 'Anonymous')} • ${fmtDate(rv.createdAt)}
+            </div>
           </li>
         `).join('')}
       </ul>
@@ -91,12 +93,14 @@
     toggleBtn.addEventListener('click', () => {
       form.style.display = form.style.display === 'none' ? 'block' : 'none';
       msg.textContent = '';
+      msg.style.color = '';
     });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!CURRENT_RESTAURANT?._id) return;
 
+      msg.style.color = '';
       msg.textContent = 'Submitting...';
       const fd = new FormData(form);
       const payload = {
@@ -106,21 +110,38 @@
       };
 
       try {
-        // expects POST /api/reviews/:restaurantId (ensure this exists in your routes)
+        // expects POST /api/reviews/:restaurantId
         const res = await fetch(`/api/reviews/${CURRENT_RESTAURANT._id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error('Failed to submit review');
+
+        // Best-effort parse
+        const data = await res.json().catch(() => ({}));
+
+        if (res.status === 409) {
+          msg.style.color = '#b91c1c';
+          msg.textContent = data?.error || "You’ve already reviewed this restaurant.";
+          return;
+        }
+
+        if (!res.ok) {
+          msg.style.color = '#b91c1c';
+          msg.textContent = data?.error || 'Error: could not save review.';
+          return;
+        }
+
+        msg.style.color = '';
         msg.textContent = 'Thanks for your review!';
-        await load();            // refresh header stats + review list
+        await load();     // refresh header stats + review list
         form.reset();
         form.style.display = 'none';
       } catch (err) {
         console.error(err);
-        msg.textContent = 'Error: could not save review.';
+        msg.style.color = '#b91c1c';
+        msg.textContent = 'Network error. Please try again.';
       }
     });
   }

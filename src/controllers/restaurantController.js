@@ -30,8 +30,9 @@ export const getBySlug = async (req, res) => {
   const doc = await Restaurant.findOne({ slug }).lean();
   if (!doc) return res.status(404).json({ error: "Restaurant not found" });
 
-  // 2) Fetch reviews (newest first)
+  // 2) Fetch reviews (newest first) + ✅ populate reviewer (name/email)
   const reviews = await Review.find({ restaurantId: doc._id })
+    .populate("userId", "name email")   // ← NEW: include reviewer identity
     .sort({ createdAt: -1 })
     .lean();
 
