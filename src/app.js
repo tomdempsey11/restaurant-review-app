@@ -33,24 +33,33 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isProd = process.env.NODE_ENV === "production";
+const isTest = process.env.NODE_ENV === "test";
 
 export const app = express();
+
+// If behind a proxy in prod (Render/Heroku/etc), enable trust proxy
+if (isProd) app.set("trust proxy", 1);
 
 // View engine (EJS)
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "ejs");
 
-// Security
+// Security (looser in dev/test, stricter in prod)
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: false,          // keep off unless you add CSP rules
     crossOriginEmbedderPolicy: false,
-    hsts: false,
+    hsts: isProd ? undefined : false,      // enable HSTS in prod only
   })
 );
 
+// CORS (keep permissive for dev; you can tighten in prod to your domain)
 app.use(cors({ origin: true, credentials: true }));
-app.use(morgan("dev"));
+
+// Logging (silence in tests)
+if (!isTest) app.use(morgan("dev"));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -84,10 +93,9 @@ app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
 
 // No-cache for API list to ensure fresh sorts/filters
 app.use("/api/restaurants", (req, res, next) => {
-  res.set("Cache-Control", "no-store"); // disable caching for this endpoint
+  res.set("Cache-Control", "no-store");
   next();
 });
-
 
 // API routers
 app.use("/", indexRouter);

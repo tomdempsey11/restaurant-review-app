@@ -5,18 +5,31 @@ dotenv.config();
 
 export function sessionConfig() {
   const ttl = 1000 * 60 * 60 * 24 * 7; // 7 days
-  return {
+  const common = {
     secret: process.env.SESSION_SECRET || "dev_secret_change_me",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: ttl
+      maxAge: ttl,
     },
+  };
+
+  // ✅ Use in-memory store during testing (prevents Jest hanging)
+  if (process.env.NODE_ENV === "test") {
+    return {
+      ...common,
+      store: new session.MemoryStore(),
+    };
+  }
+
+  // Default (Mongo-backed session for dev & prod)
+  return {
+    ...common,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
-      ttl: ttl / 1000
-    })
+      ttl: ttl / 1000,
+    }),
   };
 }
