@@ -17,16 +17,10 @@ import reviewRouter from "./routes/reviews.js";
 import userRouter from "./routes/users.js";
 import pagesRouter from "./routes/pages.js";
 import userPagesRouter from "./routes/userPages.js";
-
-// Admin + guards
 import adminRouter from "./routes/admin.js";
 import ensureLoggedIn from "./middleware/ensureLoggedIn.js";
 import ensureAdmin from "./middleware/ensureAdmin.js";
-
-// Admin Contact routes
 import adminContactRouter from "./routes/adminContact.js";
-
-// Contact (ESM)
 import contactRouter from "./routes/contact.js";
 
 dotenv.config();
@@ -45,7 +39,7 @@ if (isProd) app.set("trust proxy", 1);
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "ejs");
 
-// ---------- Security Middlewares ----------
+// ---------- Security ----------
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -54,6 +48,7 @@ app.use(
   })
 );
 
+// ---------- CORS ----------
 app.use(cors({ origin: true, credentials: true }));
 
 // ---------- Logging ----------
@@ -67,43 +62,32 @@ app.use(cookieParser());
 // ---------- Sessions ----------
 app.use(session(sessionConfig()));
 
-// ---------- Make user + current path available to all views ----------
+// ---------- Globals ----------
 app.use((req, res, next) => {
-  // Expose user object from session for templates and route guards
   req.user = req.session?.user || null;
   res.locals.user = req.user;
-
-  // Helps with navbar highlighting
   res.locals.currentPath = req.path;
-
   next();
 });
 
-// ---------- Static Files ----------
-app.use(express.static(path.join(__dirname, "../public")));
-
-// ---------- Page Routes ----------
-app.use("/restaurants", pagesRouter);
-app.use("/", userPagesRouter); // includes /, /me, etc.
-
-// ---------- Admin (guarded) ----------
+// ✅ ---------- ROUTES FIRST ----------
+app.use("/", indexRouter);            // Home, etc.
+app.use("/restaurants", pagesRouter); // SSR pages
+app.use("/", userPagesRouter);        // /me, etc.
+app.use("/auth", authRouter);         // Auth routes
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminRouter);
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
-
-// ---------- APIs ----------
 app.use("/api/restaurants", (req, res, next) => {
-  res.set("Cache-Control", "no-store"); // ensure fresh data
+  res.set("Cache-Control", "no-store");
   next();
 });
-
-app.use("/", indexRouter);
-app.use("/auth", authRouter);
 app.use("/api/restaurants", restaurantRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/users", userRouter);
-
-// ---------- Contact ----------
 app.use(contactRouter);
+
+// ✅ ---------- Static Files AFTER Routes ----------
+app.use(express.static(path.join(__dirname, "../public"), { index: false }));
 
 // ---------- 404 ----------
 app.use((req, res) => {
