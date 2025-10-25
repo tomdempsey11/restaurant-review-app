@@ -878,3 +878,125 @@ body {
 }
 
 /*# sourceMappingURL=styles.css.map */
+
+
+
+
+/* --- Hamburger button --- */
+.menu-toggle {
+  display: none;          /* hidden on desktop */
+  background: none;
+  border: 0;
+  padding: 0.25rem;
+  cursor: pointer;
+  align-self: center;
+}
+.menu-toggle__bar {
+  display: block;
+  width: 24px;
+  height: 2px;
+  margin: 5px 0;
+  background: currentColor;
+}
+
+/* Layout tweaks for small screens */
+@media (max-width: 768px) {
+  .site-header .container {
+    gap: 0.5rem;
+  }
+
+  .menu-toggle {
+    display: inline-block; /* show on mobile */
+  }
+
+  /* Nav collapses on mobile */
+  .nav {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.25rem;
+    padding-top: 0.25rem;
+  }
+  .nav.open {
+    display: flex;
+  }
+
+  /* Make links stack nicely */
+  .nav a,
+  .nav .nav__auth a,
+  .nav .nav__auth button {
+    display: block;
+    width: 100%;
+  }
+}
+
+
+/* --- Mobile dropdown panel nav --- */
+@media (max-width: 768px) {
+  /* anchor the dropdown to the header container */
+  .site-header .container {
+    position: relative;
+    align-items: center;
+  }
+
+  /* hidden by default */
+  #mainNav {
+    display: none;
+  }
+
+  /* dropdown panel styles when open */
+  #mainNav.open {
+    display: block;
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: calc(100% + 8px); /* just below the header row */
+    background: #fff;
+    border: 1px solid #e5e7eb;      /* slate-200 */
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.12);
+    padding: 8px;
+    z-index: 1000;
+
+    /* subtle drop animation */
+    transform: translateY(-4px);
+    opacity: 0;
+    animation: navDrop .18s ease-out forwards;
+  }
+
+  @keyframes navDrop {
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* stack items vertically with nice tappable areas */
+  #mainNav a,
+  #mainNav .nav__auth a,
+  #mainNav .nav__auth button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 2px 0;
+  }
+
+  /* active/hover states feel like a menu */
+  #mainNav a.active,
+  #mainNav a:hover,
+  #mainNav .nav__auth a:hover,
+  #mainNav .nav__auth button:hover {
+    background: #f1f5f9; /* slate-100 */
+  }
+
+  /* split “main” links and auth with a divider */
+  #mainNav .nav__auth {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  /* make sure the hamburger shows on mobile */
+  .menu-toggle { display: inline-block; }
+  /* hide the inline nav on mobile unless opened as panel */
+  .nav { flex-direction: column; }
+}

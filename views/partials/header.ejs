@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title><%= title || "Restaurant Reviews" %></title>
   <link rel="stylesheet" href="/css/styles.css?v=<%= Date.now() %>">
+  
 
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0ea5e9">
@@ -16,7 +17,19 @@
   <div class="container row-between">
     <div class="logo">Restaurant Reviews</div>
 
-    <nav class="nav">
+    <!-- Hamburger toggle (shows on mobile) -->
+    <button id="menuToggle"
+            class="menu-toggle"
+            aria-label="Toggle navigation"
+            aria-controls="mainNav"
+            aria-expanded="false">
+      <!-- simple icon -->
+      <span class="menu-toggle__bar"></span>
+      <span class="menu-toggle__bar"></span>
+      <span class="menu-toggle__bar"></span>
+    </button>
+
+    <nav id="mainNav" class="nav">
       <a href="/" class="<%= (currentPath === '/') ? 'active' : '' %>">Home</a>
       <a href="/restaurants" class="<%= (currentPath.startsWith('/restaurants')) ? 'active' : '' %>">Browse</a>
       <a href="/contact" class="<%= (currentPath === '/contact') ? 'active' : '' %>">Contact</a>
