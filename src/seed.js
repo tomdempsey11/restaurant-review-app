@@ -1,6 +1,7 @@
 // src/seed.js
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 import { User } from "./models/User.js";
 import { Restaurant } from "./models/Restaurant.js";
 import { Review } from "./models/Review.js";
@@ -31,28 +32,36 @@ async function main() {
     User.deleteMany({})
   ]);
 
-  // Seed users
-  const [demo, admin] = await Promise.all([
-    (async () => {
-      const passwordHash = await User.hashPassword("password123");
-      return User.create({ name: "Demo User", email: "demo@example.com", passwordHash, role: "user" });
-    })(),
-    (async () => {
-      const passwordHash = await User.hashPassword("admin12345");
-      return User.create({ name: "Admin", email: "admin@example.com", passwordHash, role: "admin" });
-    })()
+  // --- USERS ---
+  const adminPassword = await bcrypt.hash("demoadmin123", 10);
+  const userPassword = await bcrypt.hash("demouser123", 10);
+
+  const [demoUser, adminUser] = await Promise.all([
+    User.create({
+      name: "Demo User",
+      email: "demo.user@example.com",
+      passwordHash: userPassword,
+      role: "user"
+    }),
+    User.create({
+      name: "Demo Admin",
+      email: "demo.admin@example.com",
+      passwordHash: adminPassword,
+      role: "admin"
+    })
   ]);
 
-  // Define possible attributes
+  console.log("👤 Users seeded:");
+  console.log("   User  → demo.user@example.com / demouser123");
+  console.log("   Admin → demo.admin@example.com / demoadmin123");
+
+  // --- RESTAURANTS ---
   const cuisines = ["Italian", "Japanese", "Mexican", "Chinese", "American", "Indian", "Thai", "Mediterranean", "Vegetarian"];
   const priceRanges = ["$", "$$", "$$$", "$$$$"];
   const cityNames = ["Irvine", "Costa Mesa", "Newport Beach", "Tustin", "Santa Ana", "Anaheim", "Orange", "Garden Grove"];
-
-  // Helper: random pick
   const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
   const restaurants = [];
-
   for (let i = 1; i <= 50; i++) {
     const name = `${rand(["The", "Cafe", "House of", "Bistro", "Grill", "Corner", "Garden", "Kitchen"])} ${rand(["Sakura", "Taco", "Pasta", "Spice", "Burger", "Curry", "Dragon", "Olive", "Zen", "Lime"])} ${i}`;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -62,9 +71,7 @@ async function main() {
     const openHours = "Daily 10:00–22:00";
     const avgRating = +(3 + Math.random() * 2).toFixed(1);
     const reviewCount = Math.floor(Math.random() * 40);
-
-    // 🕒 NEW: stagger creation dates to test newest/oldest sorting
-    const createdAt = new Date(Date.now() - i * 36 * 60 * 60 * 1000); // each ~1.5 days older
+    const createdAt = new Date(Date.now() - i * 36 * 60 * 60 * 1000);
     const updatedAt = createdAt;
 
     restaurants.push({
@@ -81,11 +88,10 @@ async function main() {
     });
   }
 
-
   await Restaurant.insertMany(restaurants);
   console.log(`🍽️ Seeded ${restaurants.length} restaurants`);
 
-  // Optional: create random reviews
+  // --- REVIEWS ---
   const sampleTitles = ["Amazing!", "Good overall", "Could be better", "Loved it!", "Will come again", "Average experience"];
   const sampleBodies = [
     "Food was delicious and service was great.",
@@ -99,9 +105,9 @@ async function main() {
   const reviews = [];
 
   for (const rest of allRestaurants) {
-    const num = Math.floor(Math.random() * 4); // 0–3 reviews per restaurant
+    const num = Math.floor(Math.random() * 4); // 0–3 reviews
     for (let i = 0; i < num; i++) {
-      const by = Math.random() > 0.5 ? demo._id : admin._id;
+      const by = Math.random() > 0.5 ? demoUser._id : adminUser._id;
       const rating = Math.floor(Math.random() * 3) + 3; // 3–5 stars
       reviews.push({
         userId: by,
@@ -118,12 +124,10 @@ async function main() {
   // Update averages
   for (const rest of allRestaurants) await recalcAverage(rest._id);
 
-  console.log("💬 Seeded", reviews.length, "reviews.");
-  console.log("👤 Demo login → demo@example.com / password123");
-  console.log("🛠️ Admin login → admin@example.com / admin12345");
+  console.log(`💬 Seeded ${reviews.length} reviews.`);
+  console.log("✅ Done seeding Atlas – ready for presentation!");
 
   await mongoose.disconnect();
-  console.log("✅ Done");
 }
 
 main().catch(err => {

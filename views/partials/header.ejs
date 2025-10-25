@@ -5,35 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title><%= title || "Restaurant Reviews" %></title>
   <link rel="stylesheet" href="/css/styles.css">
-  <% /* Optional (PWA later): <link rel="manifest" href="/manifest.json"> */ %>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0ea5e9">
-
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="site-header">
   <div class="container row-between">
-    <div class="logo">🍽️ Restaurant Reviews</div>
+    <div class="logo">Restaurant Reviews</div>
 
-      <nav class="nav">
-        <a href="/" class="<%= (currentPath === '/') ? 'active' : '' %>">Home</a>
-        <a href="/restaurants" class="<%= (currentPath === '/restaurants') ? 'active' : '' %>">Browse</a>
-        <a href="/contact" class="<%= (currentPath === '/contact') ? 'active' : '' %>">Contact</a>
+    <nav class="nav">
+      <a href="/" class="<%= (currentPath === '/') ? 'active' : '' %>">Home</a>
+      <a href="/restaurants" class="<%= (currentPath.startsWith('/restaurants')) ? 'active' : '' %>">Browse</a>
+      <a href="/contact" class="<%= (currentPath === '/contact') ? 'active' : '' %>">Contact</a>
 
-        <div class="nav__auth">
-          <% if (user) { %>
-            <form action="/auth/logout" method="POST" class="inline-form">
-              <button class="link-like" type="submit">Logout</button>
-            </form>
-          <% } else { %>
-            <a href="/auth/login">Login</a>
-            <a class="btn btn--primary btn--sm" href="/auth/signup">Sign Up</a>
-          <% } %>
-        </div>
-      </nav>
+      <% if (user && user.role === 'admin') { %>
+        <!-- Admin-only links -->
+        <a href="/admin/contact-messages" class="<%= (currentPath === '/admin/contact-messages') ? 'active' : '' %>">Admin Messages</a>
+        <a href="/admin/restaurants" class="<%= (currentPath === '/admin/restaurants') ? 'active' : '' %>">Manage Restaurants</a>
+      <% } %>
 
+      <div class="nav__auth">
+        <% if (user) { %>
+          <form action="/auth/logout" method="POST" class="inline-form">
+            <button class="link-like" type="submit">Logout</button>
+          </form>
+        <% } else { %>
+          <a href="/auth/login">Login</a>
+          <a class="btn btn--primary btn--sm" href="/auth/signup">Sign Up</a>
+        <% } %>
+      </div>
+    </nav>
   </div>
 </header>
 

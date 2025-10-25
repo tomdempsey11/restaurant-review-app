@@ -38,76 +38,74 @@ const isTest = process.env.NODE_ENV === "test";
 
 export const app = express();
 
-// If behind a proxy in prod (Render/Heroku/etc), enable trust proxy
+// ---------- Proxy Trust ----------
 if (isProd) app.set("trust proxy", 1);
 
-// View engine (EJS)
+// ---------- View Engine ----------
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "ejs");
 
-// Security (looser in dev/test, stricter in prod)
+// ---------- Security Middlewares ----------
 app.use(
   helmet({
-    contentSecurityPolicy: false,          // keep off unless you add CSP rules
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-    hsts: isProd ? undefined : false,      // enable HSTS in prod only
+    hsts: isProd ? undefined : false,
   })
 );
 
-// CORS (keep permissive for dev; you can tighten in prod to your domain)
 app.use(cors({ origin: true, credentials: true }));
 
-// Logging (silence in tests)
+// ---------- Logging ----------
 if (!isTest) app.use(morgan("dev"));
 
+// ---------- Body + Cookie Parsing ----------
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// Sessions BEFORE routers
+// ---------- Sessions ----------
 app.use(session(sessionConfig()));
 
-// Make user available everywhere
+// ---------- Make user + current path available to all views ----------
 app.use((req, res, next) => {
+  // Expose user object from session for templates and route guards
   req.user = req.session?.user || null;
   res.locals.user = req.user;
-  next();
-});
 
-// Current path helper for active nav
-app.use((req, res, next) => {
+  // Helps with navbar highlighting
   res.locals.currentPath = req.path;
+
   next();
 });
 
-// Static files
+// ---------- Static Files ----------
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Server-rendered pages
+// ---------- Page Routes ----------
 app.use("/restaurants", pagesRouter);
-app.use("/", userPagesRouter); // exposes /me, etc.
+app.use("/", userPagesRouter); // includes /, /me, etc.
 
-// Admin (guarded)
+// ---------- Admin (guarded) ----------
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminRouter);
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
 
-// No-cache for API list to ensure fresh sorts/filters
+// ---------- APIs ----------
 app.use("/api/restaurants", (req, res, next) => {
-  res.set("Cache-Control", "no-store");
+  res.set("Cache-Control", "no-store"); // ensure fresh data
   next();
 });
 
-// API routers
 app.use("/", indexRouter);
 app.use("/auth", authRouter);
 app.use("/api/restaurants", restaurantRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/users", userRouter);
 
-// Contact routes (no prefix): GET /contact, POST /api/contact
+// ---------- Contact ----------
 app.use(contactRouter);
 
-// 404
+// ---------- 404 ----------
 app.use((req, res) => {
   if (req.accepts("html")) {
     return res.status(404).render("404", { title: "Not Found" });
@@ -115,9 +113,9 @@ app.use((req, res) => {
   res.status(404).json({ error: "Not Found" });
 });
 
-// 500
+// ---------- 500 ----------
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error("💥 Server error:", err);
   if (req.accepts("html")) {
     return res.status(500).render("500", { title: "Server Error" });
   }
