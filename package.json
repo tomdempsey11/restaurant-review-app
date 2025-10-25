@@ -45,8 +45,17 @@
   "jest": {
     "testEnvironment": "node",
     "transform": {
-      "^.+\\.jsx?$": ["babel-jest", { "presets": ["@babel/preset-env"] }]
+      "^.+\\.jsx?$": [
+        "babel-jest",
+        {
+          "presets": [
+            "@babel/preset-env"
+          ]
+        }
+      ]
     },
-    "setupFilesAfterEnv": ["<rootDir>/tests/jest.setup.js"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/jest.setup.js"
+    ]
   }
 }
