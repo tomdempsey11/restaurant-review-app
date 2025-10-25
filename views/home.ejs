@@ -1,19 +1,51 @@
-<%- include('partials/header', { title }) %>
+<%- include('partials/header', { title: title }) %>
 
+<section class="hero hero--image page-section">
+  <div class="hero__overlay"></div>
+  <div class="container hero__inner" style="text-align:center;">
+    <p class="hero__eyebrow">Eat well, explore more</p>
+    <h1 class="hero__title">Discover and review great places to eat</h1>
+    <p class="hero__sub">Browse the latest openings, fan favorites, and hidden gems around you.</p>
 
-<section class="hero page-section">
-  <h1 class="hero__title">Discover and review great places to eat</h1>
-
-  <form class="search" action="/api/restaurants" method="GET">
-    <input class="input" type="text" name="q" placeholder="Search by name or cuisine" />
-    <button class="btn btn--primary" type="submit">Search</button>
-  </form>
+    <div class="hero__actions" style="margin-top:1rem; display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap;">
+      <a href="/restaurants" class="btn btn--primary">Discover</a>
+      <!-- Optional quick link -->
+      <a href="/restaurants?sort=top" class="btn btn--outline">Top Rated</a>
+    </div>
+  </div>
 </section>
 
-<section class="cards container container--narrow">
-  <div class="card card--feature">Featured #1</div>
-  <div class="card card--feature">Featured #2</div>
-  <div class="card card--feature">Featured #3</div>
-</section>
+<main class="container container--narrow" style="margin-top:2rem;">
+  <% if (Array.isArray(featured) && featured.length) { %>
+    <section id="homeFeatured">
+      <h2 class="hf-title">Featured Restaurants</h2>
+
+      <div class="hf-grid">
+        <% featured.forEach(function(r){ %>
+          <a class="hf-card" href="/restaurants/<%= r.slug || r._id %>">
+            <% if (r.photos && r.photos.length) { %>
+              <img src="<%= r.photos[0] %>" alt="<%= r.name %>" class="hf-img">
+            <% } else { %>
+              <div class="hf-img hf-img--ph">🍽️</div>
+            <% } %>
+
+            <div class="hf-content">
+              <h3 class="hf-name"><%= r.name %></h3>
+              <p class="hf-meta">
+                <%= r.cuisine || 'Restaurant' %>
+                <% if (r.priceRange) { %> • <%= r.priceRange %><% } %>
+                <% if (r.avgRating != null) { %> • ⭐ <%= Number(r.avgRating).toFixed(1) %><% } %>
+              </p>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    </section>
+  <% } %>
+</main>
+
+
+
+
 
 <%- include('partials/footer') %>

@@ -15,3 +15,5 @@ const restaurantSchema = new mongoose.Schema({
 // ✅ Named export (back to your original style)
 export const Restaurant =
   mongoose.models.Restaurant || mongoose.model("Restaurant", restaurantSchema);
+
+
