@@ -11,8 +11,8 @@
     "seed": "node src/seed.js",
     "seed:user": "node src/seedUser.js",
     "seed:admin": "node scripts/seedAdmin.js",
-    "build:css": "sass src/scss/styles.scss public/css/styles.css --style=compressed",
-    "watch:css": "sass --watch src/scss/styles.scss:public/css/styles.css"
+    "build-css": "sass public/scss:public/css --no-source-map",
+    "watch-css": "sass --watch public/scss:public/css --no-source-map"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -45,17 +45,8 @@
   "jest": {
     "testEnvironment": "node",
     "transform": {
-      "^.+\\.jsx?$": [
-        "babel-jest",
-        {
-          "presets": [
-            "@babel/preset-env"
-          ]
-        }
-      ]
+      "^.+\\.jsx?$": ["babel-jest", { "presets": ["@babel/preset-env"] }]
     },
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/jest.setup.js"
-    ]
+    "setupFilesAfterEnv": ["<rootDir>/tests/jest.setup.js"]
   }
 }
