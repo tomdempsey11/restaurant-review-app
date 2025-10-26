@@ -870,14 +870,15 @@ body {
 
 
 /* =========================
-   Header + Hamburger + Mobile Nav
+   Header + Hamburger + Mobile Nav (class-driven)
    ========================= */
 
-/* keep header tappable above hero; overlay can't eat taps */
+/* keep header above hero; overlay can't eat taps */
 .site-header { position: sticky; top: 0; z-index: 9999; }
+.site-header .container { position: relative; overflow: visible; }
 .hero__overlay { pointer-events: none; z-index: 1; }
 
-/* Hamburger button (hidden by default; shown on mobile) */
+/* Hamburger button (hidden by default; shown via .is-mobile) */
 .menu-toggle {
   display: none;                 /* desktop default */
   background: none;
@@ -897,63 +898,65 @@ body {
   background: currentColor;
 }
 
-/* -------- Mobile (<=900px) -------- */
-@media (max-width: 900px) {
-  /* anchor dropdown to header row */
-  .site-header .container {
-    position: relative;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  /* show hamburger, hide nav by default */
-  #menuToggle { display: inline-flex !important; align-items: center; justify-content: center; }
-  #mainNav { display: none !important; }
-
-  /* reveal dropdown panel when JS adds .open */
-  #mainNav.open {
-    display: block !important;
-    position: absolute;
-    left: 16px; right: 16px; top: calc(100% + 8px);
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0,0,0,.12);
-    padding: 8px;
-    z-index: 1000;
-    transform: translateY(-4px);
-    opacity: 0;
-    animation: navDrop .18s ease-out forwards;
-  }
-
-  @keyframes navDrop { to { transform: translateY(0); opacity: 1; } }
-
-  /* stack links; large tap targets */
-  #mainNav a,
-  #mainNav .nav__auth a,
-  #mainNav .nav__auth button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 10px 12px;
-    border-radius: 8px;
-    margin: 2px 0;
-  }
-
-  /* remove the desktop left divider inside dropdown */
-  #mainNav .nav__auth { margin-left: 0; padding-left: 0; border-left: 0; }
+/* -------- Mobile behavior (when body.has .is-mobile) -------- */
+body.is-mobile #menuToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* -------- Desktop (>=901px) -------- */
-@media (min-width: 901px) {
-  #menuToggle { display: none !important; }
-  .site-nav {
-    display: flex !important;
-    align-items: center;
-    gap: 1rem;
-    position: static;
-    background: transparent;
-    padding: 0;
-    border: 0;
-  }
+/* hide the nav inline on mobile */
+body.is-mobile .site-nav { display: none; }
+
+/* reveal dropdown when JS adds .open */
+body.is-mobile #mainNav.open {
+  display: block;
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(100% + 8px);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.12);
+  padding: 8px;
+  z-index: 10000;
+  transform: translateY(-4px);
+  opacity: 0;
+  animation: navDrop .18s ease-out forwards;
+}
+
+@keyframes navDrop {
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* stack links; large tap targets */
+body.is-mobile #mainNav a,
+body.is-mobile #mainNav .nav__auth a,
+body.is-mobile #mainNav .nav__auth button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 2px 0;
+}
+
+/* remove the desktop left divider inside dropdown */
+body.is-mobile #mainNav .nav__auth {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* -------- Desktop behavior (when NOT mobile) -------- */
+body:not(.is-mobile) #menuToggle { display: none; }
+body:not(.is-mobile) .site-nav {
+  display: flex !important;
+  align-items: center;
+  gap: 1rem;
+  position: static;
+  background: transparent;
+  padding: 0;
+  border: 0;
 }

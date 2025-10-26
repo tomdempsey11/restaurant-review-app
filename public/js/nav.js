@@ -1,40 +1,40 @@
 // public/js/nav.js
-(function attach() {
-  const toggle = document.getElementById('menuToggle');
-  const nav = document.getElementById('mainNav');
+(function () {
+  const MOBILE_Q = window.matchMedia('(max-width: 900px)');
 
-  // If the nodes aren't there yet, try again after DOM is ready.
-  if (!toggle || !nav) {
-    document.addEventListener('DOMContentLoaded', attach, { once: true });
-    return;
+  function applyMobileFlag() {
+    document.body.classList.toggle('is-mobile', MOBILE_Q.matches);
   }
 
-  // Avoid double-binding across hot reloads/renders
-  if (toggle.__bound) return;
-  toggle.__bound = true;
+  function bindNav() {
+    const toggle = document.getElementById('menuToggle');
+    const nav = document.getElementById('mainNav');
+    if (!toggle || !nav) return;
 
-  const handleToggle = () => {
-    const isOpen = nav.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', String(isOpen));
-    console.log('[nav] toggled:', isOpen);
-  };
+    if (toggle.__bound) return;
+    toggle.__bound = true;
 
-  // Click + keyboard support
-  toggle.addEventListener('click', handleToggle, { passive: true });
-  toggle.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleToggle();
-    }
-  });
+    const handleToggle = () => {
+      const isOpen = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    };
 
-  // Close when a link inside the menu is clicked
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('#mainNav a')) {
-      nav.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    }
-  }, { passive: true });
+    toggle.addEventListener('click', handleToggle, { passive: true });
+    toggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(); }
+    });
 
-  console.log('[nav] bound:', { hasToggle: !!toggle, hasNav: !!nav });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#mainNav a')) {
+        nav.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    }, { passive: true });
+  }
+
+  // Init
+  applyMobileFlag();
+  MOBILE_Q.addEventListener ? MOBILE_Q.addEventListener('change', applyMobileFlag)
+                            : MOBILE_Q.addListener(applyMobileFlag);
+  document.addEventListener('DOMContentLoaded', () => { applyMobileFlag(); bindNav(); });
 })();
