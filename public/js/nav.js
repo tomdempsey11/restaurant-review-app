@@ -1,40 +1,71 @@
 // public/js/nav.js
 (function () {
-  const MOBILE_Q = window.matchMedia('(max-width: 900px)');
+  // Single source of truth for "mobile" state
+  const MQ = window.matchMedia('(max-width: 900px)');
 
   function applyMobileFlag() {
-    document.body.classList.toggle('is-mobile', MOBILE_Q.matches);
-  }
+    const isMobile = MQ.matches;
+    document.body.classList.toggle('is-mobile', isMobile);
 
-  function bindNav() {
-    const toggle = document.getElementById('menuToggle');
+    // When leaving mobile → force-close menu and reset button state
     const nav = document.getElementById('mainNav');
-    if (!toggle || !nav) return;
+    const toggle = document.getElementById('menuToggle');
+    if (!nav || !toggle) return;
 
-    if (toggle.__bound) return;
-    toggle.__bound = true;
-
-    const handleToggle = () => {
-      const isOpen = nav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(isOpen));
-    };
-
-    toggle.addEventListener('click', handleToggle, { passive: true });
-    toggle.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(); }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('#mainNav a')) {
-        nav.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
-    }, { passive: true });
+    if (!isMobile) {
+      nav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
   }
 
-  // Init
+  function bindHandlers() {
+    const nav = document.getElementById('mainNav');
+    const toggle = document.getElementById('menuToggle');
+    if (!nav || !toggle) return;
+
+    if (!toggle.__bound) {
+      toggle.__bound = true;
+
+      const handleToggle = () => {
+        // Only toggle when we are in mobile mode
+        if (!document.body.classList.contains('is-mobile')) return;
+        const isOpen = nav.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      };
+
+      toggle.addEventListener('click', handleToggle, { passive: true });
+      toggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleToggle();
+        }
+      });
+
+      // Close the menu when a link is tapped
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('#mainNav a')) {
+          nav.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      }, { passive: true });
+    }
+  }
+
+  // Init now
   applyMobileFlag();
-  MOBILE_Q.addEventListener ? MOBILE_Q.addEventListener('change', applyMobileFlag)
-                            : MOBILE_Q.addListener(applyMobileFlag);
-  document.addEventListener('DOMContentLoaded', () => { applyMobileFlag(); bindNav(); });
+  bindHandlers();
+
+  // Update on MQ changes (all browsers)
+  if (typeof MQ.addEventListener === 'function') {
+    MQ.addEventListener('change', applyMobileFlag);
+  } else if (typeof MQ.addListener === 'function') {
+    MQ.addListener(applyMobileFlag);
+  }
+
+  // Also update on resize as a belt-and-suspenders fallback
+  let t;
+  window.addEventListener('resize', () => {
+    clearTimeout(t);
+    t = setTimeout(applyMobileFlag, 100);
+  });
 })();
