@@ -681,14 +681,7 @@ body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
 
-.site-header, .site-footer {
-  background: #fff;
-  border-bottom: 1px solid #eee;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+
 
 .site-footer {
   border-top: 1px solid #eee;
@@ -727,12 +720,7 @@ body {
   gap: 8px;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 16px;
-}
+
 
 .card {
   background: var(--card);
