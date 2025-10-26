@@ -1,18 +1,21 @@
 // public/service-worker.js
-const CACHE = 'rr-v2'; // bump to invalidate old cache
+const CACHE = 'rr-v3'; // bump to invalidate old cache
 const ASSETS = [
-  '/',               // fallback for offline
-  '/css/styles.css',
+  '/',               // offline fallback for navigations
   '/manifest.json',
+  // Note: we intentionally do NOT precache '/css/styles.css'
+  // because your site serves it with ?v=... and runtime caching will handle it.
 ];
 
-// Precache core assets
+// ---- Install: precache "always-good" assets ----
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE).then((c) => c.addAll(ASSETS))
+  );
   self.skipWaiting();
 });
 
-// Activate and clean old caches
+// ---- Activate: clean up old caches ----
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
@@ -22,27 +25,28 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch strategy:
-// - HTML navigations → NETWORK-FIRST (so navbar reflects current session)
-// - Static assets (css/js/img/fonts) → CACHE-FIRST
+// ---- Fetch strategy ----
+// - HTML navigations: NETWORK-FIRST (ensures latest UI/session state)
+// - Static same-origin assets (css/js/img/fonts): CACHE-FIRST (with safe put)
 self.addEventListener('fetch', (e) => {
   const req = e.request;
 
-  // Only handle GET requests
+  // Only handle GET
   if (req.method !== 'GET') return;
 
-  // Network-first for navigations (HTML)
-  if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
+  // Treat navigations (HTML) as network-first
+  const acceptsHTML = (req.headers.get('accept') || '').includes('text/html');
+  if (req.mode === 'navigate' || acceptsHTML) {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          // Update cache for offline support
+          // Update cache in background for offline
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
           return res;
         })
         .catch(async () => {
-          // Fallback to cache (or to '/')
+          // Fallback: cached page or '/'
           const cached = await caches.match(req);
           return cached || caches.match('/');
         })
@@ -50,9 +54,9 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache-first for same-origin static assets
+  // Same-origin static assets: cache-first
   const url = new URL(req.url);
-  const isSameOrigin = url.origin === location.origin;
+  const isSameOrigin = url.origin === self.location.origin;
   const isStatic = /\.(css|js|png|jpg|jpeg|svg|ico|webp|gif|woff2?|ttf|eot)$/i.test(url.pathname);
 
   if (isSameOrigin && isStatic) {
@@ -60,10 +64,13 @@ self.addEventListener('fetch', (e) => {
       caches.match(req).then((cached) => {
         if (cached) return cached;
         return fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          // Only cache good same-origin responses
+          if (res.ok && res.type === 'basic') {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
           return res;
-        });
+        }).catch(() => cached); // if network fails, fall back to any cached version
       })
     );
   }

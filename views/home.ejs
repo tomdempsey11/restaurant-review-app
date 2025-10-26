@@ -9,13 +9,12 @@
 
     <div class="hero__actions" style="margin-top:1rem; display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap;">
       <a href="/restaurants" class="btn btn--primary">Discover</a>
-      <!-- Optional quick link -->
       <a href="/restaurants?sort=top" class="btn btn--outline">Top Rated</a>
     </div>
   </div>
 </section>
 
-<main class="container container--narrow" style="margin-top:2rem;">
+<section class="container container--narrow" style="margin-top:2rem;">
   <% if (Array.isArray(featured) && featured.length) { %>
     <section id="homeFeatured">
       <h2 class="hf-title">Featured Restaurants</h2>
@@ -42,10 +41,6 @@
       </div>
     </section>
   <% } %>
-</main>
-
-
-
-
+</section>
 
 <%- include('partials/footer') %>

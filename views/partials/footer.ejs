@@ -7,41 +7,18 @@
   </div>
 </footer>
 
-<% /* Optional (PWA later):
+<!-- Register the service worker after load (more reliable in prod) -->
 <script>
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/service-worker.js'); }
-</script>
-*/ %>
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js').catch(console.error);
-}
-</script>
-
-<script>
-  (function () {
-    const toggle = document.getElementById('menuToggle');
-    const nav = document.getElementById('mainNav');
-    if (!toggle || !nav) return;
-
-    toggle.addEventListener('click', () => {
-      const isOpen = nav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(isOpen));
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(console.error);
     });
-
-    // Close menu when a link is tapped (nice UX)
-    nav.addEventListener('click', (e) => {
-      const link = e.target.closest('a');
-      if (!link) return;
-      nav.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    });
-  })();
+  }
 </script>
 
-
-
+<!-- Hamburger / nav toggle (external, deferred) -->
+<script defer src="/js/nav.js?v=1"></script>
 
 </body>
 </html>
+
