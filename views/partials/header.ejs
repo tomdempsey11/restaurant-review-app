@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title><%= title || "Restaurant Reviews" %></title>
   <link rel="stylesheet" href="/css/styles.css?v=<%= Date.now() %>">
-  
 
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0ea5e9">
@@ -23,19 +22,17 @@
             aria-label="Toggle navigation"
             aria-controls="mainNav"
             aria-expanded="false">
-      <!-- simple icon -->
       <span class="menu-toggle__bar"></span>
       <span class="menu-toggle__bar"></span>
       <span class="menu-toggle__bar"></span>
     </button>
 
-    <nav id="mainNav" class="nav">
+    <nav id="mainNav" class="site-nav">
       <a href="/" class="<%= (currentPath === '/') ? 'active' : '' %>">Home</a>
       <a href="/restaurants" class="<%= (currentPath.startsWith('/restaurants')) ? 'active' : '' %>">Browse</a>
       <a href="/contact" class="<%= (currentPath === '/contact') ? 'active' : '' %>">Contact</a>
 
       <% if (user && user.role === 'admin') { %>
-        <!-- Admin-only links -->
         <a href="/admin/contact-messages" class="<%= (currentPath === '/admin/contact-messages') ? 'active' : '' %>">Admin Messages</a>
         <a href="/admin/restaurants" class="<%= (currentPath === '/admin/restaurants') ? 'active' : '' %>">Manage Restaurants</a>
       <% } %>
