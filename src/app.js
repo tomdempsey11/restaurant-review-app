@@ -70,13 +70,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ ---------- ROUTES FIRST ----------
+// ✅ ---------- Static Files (MOVED ABOVE ROUTES) ----------
+app.use(express.static(path.join(__dirname, "../public"), { index: false }));
+
+// ---------- ROUTES ----------
 app.use("/", indexRouter);            // Home, etc.
 app.use("/restaurants", pagesRouter); // SSR pages
 app.use("/", userPagesRouter);        // /me, etc.
 app.use("/auth", authRouter);         // Auth routes
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminRouter);
 app.use("/admin", ensureLoggedIn, ensureAdmin, adminContactRouter);
+
+// API routes
 app.use("/api/restaurants", (req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
@@ -85,9 +90,6 @@ app.use("/api/restaurants", restaurantRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/users", userRouter);
 app.use(contactRouter);
-
-// ✅ ---------- Static Files AFTER Routes ----------
-app.use(express.static(path.join(__dirname, "../public"), { index: false }));
 
 // ---------- 404 ----------
 app.use((req, res) => {
