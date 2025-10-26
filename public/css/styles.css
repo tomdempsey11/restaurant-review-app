@@ -985,3 +985,49 @@ body {
     padding: 8px; z-index: 1000;
   }
 }
+
+
+
+/* keep header on top; overlay can't eat taps */
+.site-header { position: sticky; top: 0; z-index: 9999; }
+.hero__overlay { pointer-events: none; z-index: 1; }
+
+/* Mobile dropdown */
+@media (max-width: 900px) {
+  .menu-toggle { display: inline-block; }
+
+  #mainNav { display: none; }
+
+  #mainNav.open {
+    display: block !important;
+    position: absolute;
+    left: 16px; right: 16px; top: calc(100% + 8px);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.12);
+    padding: 8px;
+    z-index: 1000;
+  }
+
+  #mainNav a,
+  #mainNav .nav__auth a,
+  #mainNav .nav__auth button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 2px 0;
+  }
+
+  #mainNav .nav__auth {
+    margin-left: 0; padding-left: 0; border-left: 0;
+  }
+}
+
+/* Desktop: inline menu, burger hidden */
+@media (min-width: 901px) {
+  .menu-toggle { display: none; }
+  .site-nav { display: flex !important; gap: 1rem; position: static; background: transparent; padding: 0; border: 0; }
+}
