@@ -869,16 +869,25 @@ body {
 
 
 
+/* =========================
+   Header + Hamburger + Mobile Nav
+   ========================= */
 
-/* --- Hamburger button --- */
-/* --- Hamburger button --- */
+/* keep header tappable above hero; overlay can't eat taps */
+.site-header { position: sticky; top: 0; z-index: 9999; }
+.hero__overlay { pointer-events: none; z-index: 1; }
+
+/* Hamburger button (hidden by default; shown on mobile) */
 .menu-toggle {
-  display: none;          /* hidden on desktop */
+  display: none;                 /* desktop default */
   background: none;
   border: 0;
   padding: 0.25rem;
   cursor: pointer;
   align-self: center;
+  width: 34px;
+  height: 24px;
+  color: #0f172a;                /* used by currentColor below */
 }
 .menu-toggle__bar {
   display: block;
@@ -888,47 +897,38 @@ body {
   background: currentColor;
 }
 
-/* --- Mobile nav (dropdown panel) --- */
-@media (max-width: 768px) {
-  /* Layout tweaks on small screens */
+/* -------- Mobile (<=900px) -------- */
+@media (max-width: 900px) {
+  /* anchor dropdown to header row */
   .site-header .container {
-    position: relative;   /* anchor dropdown panel */
+    position: relative;
     align-items: center;
     gap: 0.5rem;
   }
 
-  /* show the hamburger on mobile */
-  .menu-toggle { display: inline-block; }
+  /* show hamburger, hide nav by default */
+  #menuToggle { display: inline-flex !important; align-items: center; justify-content: center; }
+  #mainNav { display: none !important; }
 
-  /* hide nav by default on mobile */
-  /* IMPORTANT: your nav element has id="mainNav" and class="site-nav" */
-  #mainNav { display: none; }
-
-  /* when JS adds .open, show as a dropdown panel */
+  /* reveal dropdown panel when JS adds .open */
   #mainNav.open {
-    display: block;
+    display: block !important;
     position: absolute;
-    left: 16px;
-    right: 16px;
-    top: calc(100% + 8px);       /* just below header row */
+    left: 16px; right: 16px; top: calc(100% + 8px);
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     box-shadow: 0 12px 30px rgba(0,0,0,.12);
     padding: 8px;
     z-index: 1000;
-
-    /* subtle drop animation */
     transform: translateY(-4px);
     opacity: 0;
     animation: navDrop .18s ease-out forwards;
   }
 
-  @keyframes navDrop {
-    to { transform: translateY(0); opacity: 1; }
-  }
+  @keyframes navDrop { to { transform: translateY(0); opacity: 1; } }
 
-  /* stack links vertically; make them easy to tap */
+  /* stack links; large tap targets */
   #mainNav a,
   #mainNav .nav__auth a,
   #mainNav .nav__auth button {
@@ -940,28 +940,13 @@ body {
     margin: 2px 0;
   }
 
-  /* active/hover feel like a menu */
-  #mainNav a.active,
-  #mainNav a:hover,
-  #mainNav .nav__auth a:hover,
-  #mainNav .nav__auth button:hover {
-    background: #f1f5f9;
-  }
-
-  /* split main links and auth block */
-  #mainNav .nav__auth {
-    border-top: 1px solid #e5e7eb;
-    margin-top: 6px;
-    padding-top: 6px;
-  }
+  /* remove the desktop left divider inside dropdown */
+  #mainNav .nav__auth { margin-left: 0; padding-left: 0; border-left: 0; }
 }
 
-/* --- Desktop nav (always visible) --- */
-@media (min-width: 769px) {
-  /* hide the hamburger on desktop */
-  .menu-toggle { display: none; }
-
-  /* ensure the nav shows inline on desktop */
+/* -------- Desktop (>=901px) -------- */
+@media (min-width: 901px) {
+  #menuToggle { display: none !important; }
   .site-nav {
     display: flex !important;
     align-items: center;
@@ -971,63 +956,4 @@ body {
     padding: 0;
     border: 0;
   }
-}
-
-
-/* DEBUG: force mobile dropdown to be visible when open */
-@media (max-width: 900px) {
-  #mainNav.open {
-    display: block !important;
-    position: absolute;
-    left: 16px; right: 16px; top: calc(100% + 8px);
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0,0,0,.12);
-    padding: 8px; z-index: 1000;
-  }
-}
-
-
-
-/* keep header on top; overlay can't eat taps */
-.site-header { position: sticky; top: 0; z-index: 9999; }
-.hero__overlay { pointer-events: none; z-index: 1; }
-
-/* Mobile dropdown */
-@media (max-width: 900px) {
-  .menu-toggle { display: inline-block; }
-
-  #mainNav { display: none; }
-
-  #mainNav.open {
-    display: block !important;
-    position: absolute;
-    left: 16px; right: 16px; top: calc(100% + 8px);
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0,0,0,.12);
-    padding: 8px;
-    z-index: 1000;
-  }
-
-  #mainNav a,
-  #mainNav .nav__auth a,
-  #mainNav .nav__auth button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 10px 12px;
-    border-radius: 8px;
-    margin: 2px 0;
-  }
-
-  #mainNav .nav__auth {
-    margin-left: 0; padding-left: 0; border-left: 0;
-  }
-}
-
-/* Desktop: inline menu, burger hidden */
-@media (min-width: 901px) {
-  .menu-toggle { display: none; }
-  .site-nav { display: flex !important; gap: 1rem; position: static; background: transparent; padding: 0; border: 0; }
 }
