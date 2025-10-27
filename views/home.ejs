@@ -5,7 +5,9 @@
   <div class="container hero__inner" style="text-align:center;">
     <p class="hero__eyebrow">Eat well, explore more</p>
     <h1 class="hero__title">Discover and review great places to eat</h1>
-    <p class="hero__sub">Browse the latest openings, fan favorites, and hidden gems around you.</p>
+    <p class="hero__sub">
+      Browse the latest openings, fan favorites, and hidden gems around you.
+    </p>
 
     <div class="hero__actions" style="margin-top:1rem; display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap;">
       <a href="/restaurants" class="btn btn--primary">Discover</a>
@@ -22,10 +24,21 @@
       <div class="hf-grid">
         <% featured.forEach(function(r){ %>
           <a class="hf-card" href="/restaurants/<%= r.slug || r._id %>">
+            
             <% if (r.photos && r.photos.length) { %>
-              <img src="<%= r.photos[0] %>" alt="<%= r.name %>" class="hf-img">
+              <img src="<%= r.photos[0] %>" alt="<%= r.name %>" class="hf-img" loading="lazy">
             <% } else { %>
-              <div class="hf-img hf-img--ph">🍽️</div>
+              <!-- Cuisine-aware fallback (randomized lock to reduce repeats) -->
+              <% 
+                const cuisineTag = (r.cuisine || 'restaurant').toLowerCase().replace(/\s+/g, ',');
+                const randomLock = (r.slug || r._id || r.name) + Math.floor(Math.random() * 1000);
+              %>
+              <img
+                class="hf-img"
+                src="https://loremflickr.com/600/400/<%= cuisineTag %>,food?lock=<%= encodeURIComponent(randomLock) %>"
+                alt="<%= r.name %>"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='https://picsum.photos/seed/<%= encodeURIComponent(r.slug || r._id || r.name) %>/600/400';">
             <% } %>
 
             <div class="hf-content">
