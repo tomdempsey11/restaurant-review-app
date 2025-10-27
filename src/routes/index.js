@@ -8,7 +8,7 @@ router.get("/", async (req, res, next) => {
   try {
     const featured = await Restaurant.find({})
       .sort({ avgRating: -1, createdAt: -1 })
-      .limit(10)
+      .limit(12)
       .lean();
 
     res.render("home", {
