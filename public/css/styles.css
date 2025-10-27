@@ -697,6 +697,13 @@ body {
   justify-content: space-between;
 }
 
+/* ↑ header sits above backdrop */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 300;
+}
+
 .site-footer {
   border-top: 1px solid #eee;
   border-bottom: 0;
@@ -710,7 +717,7 @@ body {
   font: inherit;
 }
 
-/* ---- Header + Nav (fixed) ---- */
+/* ---- Header + Nav ---- */
 .site-header .container {
   display: flex;
   align-items: center;
@@ -749,20 +756,14 @@ body {
   margin-left: 12px;
 }
 
-/* Hamburger vis (desktop hidden) */
+/* Hamburger visibility (hidden on desktop) */
 .menu-toggle {
   display: none;
 }
 
 /* =========================
-   Mobile menu polish (NEW)
+   Mobile menu (full-width sheet)
    ========================= */
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
 @media (max-width: 900px) {
   .menu-toggle {
     display: inline-flex;
@@ -787,24 +788,24 @@ body {
     margin: 3px 0;
     border-radius: 2px;
   }
-  /* dropdown panel */
+  /* full-width dropdown panel */
   .site-nav {
     position: absolute;
-    top: calc(100% + 10px);
-    right: 16px;
-    left: auto;
-    display: block; /* keep block to animate opacity */
-    width: min(92vw, 360px);
-    padding: 10px;
+    top: calc(100% + 2px);
+    right: 0;
+    left: 0;
+    width: 100%;
+    padding: 12px 20px;
     background: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 14px;
+    border-top: none;
+    border-radius: 0 0 14px 14px;
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
     pointer-events: none;
     transition: opacity 0.18s ease, transform 0.18s ease;
-    z-index: 120;
+    z-index: 310; /* above header (300) & backdrop (200) */
   }
   .site-nav.open {
     opacity: 1;
@@ -814,10 +815,12 @@ body {
   .site-nav a,
   .site-nav .link-like {
     display: block;
-    padding: 10px 12px;
+    text-align: center;
+    padding: 12px 10px;
     border-radius: 10px;
     color: var(--ink);
     text-decoration: none;
+    font-size: 1.05rem;
   }
   .site-nav a:hover {
     background: #f3f4f6;
@@ -830,20 +833,21 @@ body {
     display: flex;
     gap: 10px;
     align-items: center;
-    justify-content: space-between;
-    margin-top: 8px;
-    padding-top: 8px;
+    justify-content: center;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid #e5e7eb;
   }
 }
-/* page backdrop when menu is open */
+/* page backdrop when menu is open (below header/menu) */
 body.is-mobile-nav-open::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: saturate(120%) blur(1px);
-  z-index: 110; /* below dropdown (120), above page */
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: saturate(120%) blur(4px);
+  z-index: 200; /* below header(300)/menu(310), above page */
+  pointer-events: auto; /* blocks background taps */
 }
 
 /* ---- Cards/forms misc ---- */
